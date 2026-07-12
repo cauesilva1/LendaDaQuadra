@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, Download, RotateCcw } from "lucide-react";
+import { BasketballHalfCourtMark } from "@/components/landing/BasketballCourtLines";
 import { Button } from "@/components/ui/Button";
 import { ATTRS } from "@/lib/data";
 import { liveStats } from "@/lib/simulation";
@@ -91,16 +92,36 @@ function downloadLegacyPng(opts: {
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, W, H);
 
-  // Court circle watermark
+  // Basketball half-court watermark
   ctx.save();
-  ctx.globalAlpha = 0.08;
+  ctx.globalAlpha = 0.1;
   ctx.strokeStyle = theme.accent;
   ctx.lineWidth = 3;
+  const cx = W * 0.72;
+  const cy = H * 0.32;
+  // Key
+  ctx.strokeRect(cx - 45, cy - 90, 90, 78);
+  // Free-throw arc
   ctx.beginPath();
-  ctx.arc(W * 0.72, H * 0.38, 160, 0, Math.PI * 2);
+  ctx.arc(cx, cy - 12, 45, 0, Math.PI);
   ctx.stroke();
+  // Rim
   ctx.beginPath();
-  ctx.arc(W * 0.72, H * 0.38, 70, 0, Math.PI * 2);
+  ctx.arc(cx, cy - 72, 12, 0, Math.PI * 2);
+  ctx.stroke();
+  // Backboard
+  ctx.beginPath();
+  ctx.moveTo(cx - 28, cy - 90);
+  ctx.lineTo(cx + 28, cy - 90);
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  ctx.lineWidth = 3;
+  // Three-point arc
+  ctx.beginPath();
+  ctx.moveTo(cx - 85, cy - 90);
+  ctx.lineTo(cx - 85, cy - 50);
+  ctx.arc(cx, cy - 50, 85, Math.PI, 0, true);
+  ctx.lineTo(cx + 85, cy - 90);
   ctx.stroke();
   ctx.restore();
 
@@ -307,37 +328,11 @@ export function LegacyCard() {
           style={{ background: theme.accent }}
         />
 
-        {/* Court watermark */}
-        <svg
-          aria-hidden
-          className="pointer-events-none absolute -right-8 top-16 h-56 w-56 opacity-[0.1]"
-          viewBox="0 0 200 200"
-        >
-          <circle
-            cx="100"
-            cy="100"
-            r="88"
-            fill="none"
-            stroke={theme.accent}
-            strokeWidth="2"
-          />
-          <circle
-            cx="100"
-            cy="100"
-            r="36"
-            fill="none"
-            stroke={theme.accent}
-            strokeWidth="2"
-          />
-          <line
-            x1="12"
-            y1="100"
-            x2="188"
-            y2="100"
-            stroke={theme.accent}
-            strokeWidth="2"
-          />
-        </svg>
+        {/* Basketball half-court watermark */}
+        <BasketballHalfCourtMark
+          color={theme.accent}
+          className="pointer-events-none absolute -right-6 top-12 h-56 w-56 opacity-[0.12]"
+        />
 
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-28"

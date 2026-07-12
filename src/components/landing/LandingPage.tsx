@@ -1,48 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { BasketballCourtLines } from "@/components/landing/BasketballCourtLines";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { playHref } from "@/lib/i18n";
 import { t } from "@/lib/i18n/dictionary";
 import { LANDING_TIERS, legacyTheme } from "@/lib/legacyTheme";
 import type { Locale } from "@/types/game";
-
-function CourtLines({ color }: { color: string }) {
-  return (
-    <svg
-      aria-hidden
-      className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.14]"
-      viewBox="0 0 160 220"
-      preserveAspectRatio="none"
-    >
-      <rect
-        x="10"
-        y="10"
-        width="140"
-        height="200"
-        fill="none"
-        stroke={color}
-        strokeWidth="1.2"
-      />
-      <circle
-        cx="80"
-        cy="110"
-        r="28"
-        fill="none"
-        stroke={color}
-        strokeWidth="1"
-      />
-      <line x1="10" y1="110" x2="150" y2="110" stroke={color} strokeWidth="1" />
-      <path
-        d="M40 10 C40 50 120 50 120 10"
-        fill="none"
-        stroke={color}
-        strokeWidth="1"
-      />
-    </svg>
-  );
-}
 
 function TierPreviewCard({
   locale,
@@ -58,7 +23,7 @@ function TierPreviewCard({
 
   return (
     <article
-      className="relative w-[158px] shrink-0 overflow-hidden rounded-[18px] sm:w-[186px]"
+      className="relative w-full overflow-hidden rounded-[16px] sm:w-[186px] sm:rounded-[18px]"
       style={{
         boxShadow: `0 14px 32px rgba(0,0,0,0.42), 0 0 0 1px ${theme.accent}33, 0 0 24px ${theme.glow}`,
       }}
@@ -69,7 +34,7 @@ function TierPreviewCard({
           background: `linear-gradient(165deg, ${theme.bg1} 0%, ${theme.bg0} 48%, #05070c 100%)`,
         }}
       >
-        <CourtLines color={theme.accent} />
+        <BasketballCourtLines color={theme.accent} />
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-70"
           style={{
@@ -81,21 +46,21 @@ function TierPreviewCard({
           style={{ background: theme.accent }}
         />
 
-        <div className="relative flex h-full flex-col px-3.5 pb-3.5 pt-3 text-left">
-          <div className="flex items-start justify-between gap-2">
-            <p className="font-sans text-[8px] font-medium uppercase tracking-[0.28em] text-white/40">
+        <div className="relative flex h-full flex-col px-3 pb-3 pt-2.5 text-left sm:px-3.5 sm:pb-3.5 sm:pt-3">
+          <div className="flex items-start justify-between gap-1.5">
+            <p className="font-sans text-[7px] font-medium uppercase tracking-[0.28em] text-white/40 sm:text-[8px]">
               Lenda
             </p>
             <div className="text-right">
               <p
-                className={`font-display text-[44px] leading-none tracking-tight sm:text-[50px] ${theme.ovrClass}`}
+                className={`font-display text-[36px] leading-none tracking-tight sm:text-[50px] ${theme.ovrClass}`}
                 style={
                   isGoat ? { textShadow: `0 0 24px ${theme.glow}` } : undefined
                 }
               >
                 {ovr}
               </p>
-              <p className="mt-0.5 font-sans text-[8px] uppercase tracking-[0.22em] text-white/35">
+              <p className="mt-0.5 font-sans text-[7px] uppercase tracking-[0.22em] text-white/35 sm:text-[8px]">
                 OVR
               </p>
             </div>
@@ -103,22 +68,22 @@ function TierPreviewCard({
 
           <div className="mt-auto">
             <span
-              className={`inline-block rounded-sm px-1.5 py-0.5 font-sans text-[8px] font-semibold uppercase tracking-[0.18em] ${theme.ribbonClass}`}
+              className={`inline-block rounded-sm px-1.5 py-0.5 font-sans text-[7px] font-semibold uppercase tracking-[0.18em] sm:text-[8px] ${theme.ribbonClass}`}
             >
               {isGoat ? "99 · Elite" : tier === "allstar" ? "Star" : "Career"}
             </span>
             <h3
-              className={`mt-1.5 font-display text-[18px] uppercase leading-[0.95] tracking-wide sm:text-[20px] ${theme.titleClass}`}
+              className={`mt-1.5 font-display text-[15px] uppercase leading-[0.95] tracking-wide sm:text-[20px] ${theme.titleClass}`}
             >
               {t(locale, `tier.${tier}`)}
             </h3>
-            <p className="mt-1.5 line-clamp-3 font-sans text-[10px] leading-relaxed text-white/45 sm:text-[11px]">
+            <p className="mt-1 line-clamp-3 font-sans text-[9px] leading-relaxed text-white/45 sm:mt-1.5 sm:text-[11px]">
               {t(locale, `tier.${tier}.desc`)}
             </p>
           </div>
 
           <div
-            className="mt-2.5 h-px w-full opacity-50"
+            className="mt-2 h-px w-full opacity-50 sm:mt-2.5"
             style={{
               background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)`,
             }}
@@ -148,12 +113,12 @@ export function LandingPage({ locale }: { locale: Locale }) {
 
       <SiteHeader locale={locale} compact />
 
-      <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-4 py-4 text-center sm:py-5 lg:py-3">
+      <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-4 py-5 text-center sm:py-5 lg:py-3">
         <p className="mb-1.5 font-sans text-[10px] font-medium uppercase tracking-[0.32em] text-arena-accent sm:mb-2 sm:text-[11px]">
           {t(locale, "brand.eyebrow")}
         </p>
 
-        <h1 className="mx-auto max-w-4xl font-display text-[2.65rem] leading-[0.92] tracking-wide text-white sm:text-6xl lg:text-[4.25rem]">
+        <h1 className="mx-auto max-w-4xl font-display text-[2.45rem] leading-[0.92] tracking-wide text-white sm:text-6xl lg:text-[4.25rem]">
           {t(locale, "hero.title1")}{" "}
           <span className="bg-gradient-to-r from-arena-accent to-arena-buzzer bg-clip-text text-transparent">
             {t(locale, "hero.title2")}
@@ -165,21 +130,21 @@ export function LandingPage({ locale }: { locale: Locale }) {
           {t(locale, "hero.sub")}
         </p>
 
-        <div className="mt-4 flex w-full max-w-4xl snap-x snap-mandatory justify-start gap-3 overflow-x-auto px-1 pb-1 sm:mt-5 sm:justify-center sm:gap-4 sm:overflow-visible lg:mt-4">
+        {/* Mobile: 2×2 grid (scroll ok). Desktop: row of 4. */}
+        <div className="mt-5 grid w-full max-w-[340px] grid-cols-2 gap-2.5 sm:mt-5 sm:flex sm:max-w-4xl sm:justify-center sm:gap-4 lg:mt-4">
           {LANDING_TIERS.map((card) => (
-            <div key={card.tier} className="snap-center">
-              <TierPreviewCard
-                locale={locale}
-                ovr={card.ovr}
-                tier={card.tier}
-              />
-            </div>
+            <TierPreviewCard
+              key={card.tier}
+              locale={locale}
+              ovr={card.ovr}
+              tier={card.tier}
+            />
           ))}
         </div>
 
         <Link
           href={playHref(locale)}
-          className="mt-4 inline-flex items-center justify-center rounded-full bg-arena-accent px-9 py-3 font-display text-xl uppercase tracking-wide text-arena-bg shadow-[0_0_24px_rgba(255,122,0,0.35)] transition-colors duration-200 hover:bg-arena-buzzer hover:text-white sm:mt-5 sm:px-10 sm:py-3.5 sm:text-2xl lg:mt-4"
+          className="mt-5 inline-flex items-center justify-center rounded-full bg-arena-accent px-9 py-3 font-display text-xl uppercase tracking-wide text-arena-bg shadow-[0_0_24px_rgba(255,122,0,0.35)] transition-colors duration-200 hover:bg-arena-buzzer hover:text-white sm:mt-5 sm:px-10 sm:py-3.5 sm:text-2xl lg:mt-4"
         >
           [ {t(locale, "cta.play")} ]
         </Link>

@@ -163,84 +163,72 @@ const PRIVACY: Record<Locale, PageBlock> = {
     title: "Privacidade",
     body: [
       "O progresso da carreira fica salvo no navegador (localStorage). Não pedimos conta e não enviamos seus saves para um servidor nosso.",
-      "Se usar o formulário de contato/bug, o e-mail abre no seu cliente de e-mail — a mensagem vai direto para nós, sem passar por um backend do jogo.",
+      "Reports de bug são gravados no projeto (arquivo de log no servidor) com a mensagem, horário e user-agent. Não pedimos e-mail.",
       "Não usamos cookies de rastreamento de anúncios. Idioma e preferências locais ficam no dispositivo.",
     ],
   },
   en: {
     title: "Privacy",
     body: [
-      "Career progress is stored in your browser (localStorage). No account required, and we don’t upload your saves to our servers.",
-      "If you use the contact/bug form, it opens your email client — the message goes straight to us, not through a game backend.",
-      "We don’t use ad-tracking cookies. Locale preferences stay on your device.",
+      "Career progress is stored in your browser (localStorage). No account required, and we don't upload your saves to our servers.",
+      "Bug reports are written into the project (server log file) with the message, timestamp, and user-agent. We don't ask for email.",
+      "We don't use ad-tracking cookies. Locale preferences stay on your device.",
     ],
   },
   es: {
     title: "Privacidad",
     body: [
       "El progreso de la carrera se guarda en el navegador (localStorage). No pedimos cuenta y no subimos tus saves a un servidor nuestro.",
-      "Si usas el formulario de contacto/bug, se abre tu cliente de correo — el mensaje va directo a nosotros, sin backend del juego.",
+      "Los reportes de bug se guardan en el proyecto (archivo de log en el servidor) con el mensaje, hora y user-agent. No pedimos email.",
       "No usamos cookies de anuncios. El idioma y preferencias locales quedan en tu dispositivo.",
     ],
   },
 };
 
-const CONTACT: Record<
+const BUG: Record<
   Locale,
   {
     title: string;
-    intro: string;
-    emailLabel: string;
-    bugTitle: string;
-    bugBody: string;
-    bugPlaceholder: string;
-    bugCta: string;
-    mailSubjectBug: string;
-    mailSubjectContact: string;
+    body: string;
+    placeholder: string;
+    cta: string;
+    sending: string;
+    sent: string;
+    thanks: string;
+    error: string;
   }
 > = {
   pt: {
-    title: "Contato",
-    intro:
-      "Dúvidas, ideias ou parceria? Fala com a gente. Bugs têm um card próprio abaixo — quanto mais detalhe, melhor.",
-    emailLabel: "E-mail",
-    bugTitle: "Reportar bug",
-    bugBody:
-      "Descreva o que aconteceu, em que tela estava e se consegue reproduzir. Inclua o navegador se souber.",
-    bugPlaceholder: "Ex.: cliquei em Jogar crunch e a tela ficou vazia…",
-    bugCta: "Abrir e-mail do bug",
-    mailSubjectBug: "[Lenda da Quadra] Bug report",
-    mailSubjectContact: "[Lenda da Quadra] Contato",
+    title: "Reportar bug",
+    body: "Descreva o que aconteceu e em que tela estava. O report vai para o log do projeto — sem e-mail.",
+    placeholder: "Ex.: cliquei em Jogar crunch e a tela ficou vazia…",
+    cta: "Enviar report",
+    sending: "Enviando…",
+    sent: "Enviado",
+    thanks: "Valeu — o report foi salvo.",
+    error: "Não deu pra enviar. Tente de novo com um pouco mais de detalhe.",
   },
   en: {
-    title: "Contact",
-    intro:
-      "Questions, ideas, or partnership? Reach out. Bugs have their own card below — more detail is better.",
-    emailLabel: "Email",
-    bugTitle: "Report a bug",
-    bugBody:
-      "Describe what happened, which screen you were on, and if you can reproduce it. Include the browser if you know it.",
-    bugPlaceholder: "e.g. I clicked Play crunch and the screen went blank…",
-    bugCta: "Open bug email",
-    mailSubjectBug: "[Court Legend] Bug report",
-    mailSubjectContact: "[Court Legend] Contact",
+    title: "Report a bug",
+    body: "Describe what happened and which screen you were on. The report goes into the project log — no email.",
+    placeholder: "e.g. I clicked Play crunch and the screen went blank…",
+    cta: "Send report",
+    sending: "Sending…",
+    sent: "Sent",
+    thanks: "Thanks — the report was saved.",
+    error: "Couldn't send. Try again with a bit more detail.",
   },
   es: {
-    title: "Contacto",
-    intro:
-      "¿Dudas, ideas o partnership? Escríbenos. Los bugs tienen su propia tarjeta abajo — cuanto más detalle, mejor.",
-    emailLabel: "Email",
-    bugTitle: "Reportar bug",
-    bugBody:
-      "Describe qué pasó, en qué pantalla estabas y si se puede reproducir. Incluye el navegador si lo sabes.",
-    bugPlaceholder: "Ej.: clic en Jugar crunch y la pantalla quedó vacía…",
-    bugCta: "Abrir email del bug",
-    mailSubjectBug: "[Lenda da Quadra] Bug report",
-    mailSubjectContact: "[Lenda da Quadra] Contacto",
+    title: "Reportar bug",
+    body: "Describe qué pasó y en qué pantalla estabas. El reporte va al log del proyecto — sin email.",
+    placeholder: "Ej.: clic en Jugar crunch y la pantalla quedó vacía…",
+    cta: "Enviar reporte",
+    sending: "Enviando…",
+    sent: "Enviado",
+    thanks: "Gracias — el reporte se guardó.",
+    error: "No se pudo enviar. Prueba de nuevo con un poco más de detalle.",
   },
 };
-
-export const CONTACT_EMAIL = "hello@lendadquadra.com";
 
 export function getSobre(locale: Locale) {
   return SOBRE[locale];
@@ -251,6 +239,6 @@ export function getDocs(locale: Locale) {
 export function getPrivacy(locale: Locale) {
   return PRIVACY[locale];
 }
-export function getContact(locale: Locale) {
-  return CONTACT[locale];
+export function getBugPage(locale: Locale) {
+  return BUG[locale];
 }

@@ -9,7 +9,7 @@ const LINKS: { page: SitePage; key: string }[] = [
   { page: "sobre", key: "nav.about" },
   { page: "docs", key: "nav.docs" },
   { page: "privacidade", key: "nav.privacy" },
-  { page: "contato", key: "nav.contact" },
+  { page: "bug", key: "nav.bug" },
 ];
 
 export function SiteFooter({
@@ -21,26 +21,24 @@ export function SiteFooter({
 }) {
   return (
     <footer
-      className={`w-full ${compact ? "py-2" : "py-6"} border-t border-white/8`}
+      className={`w-full border-t border-white/8 ${compact ? "py-2" : "py-6"}`}
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-2 px-4 sm:flex-row sm:justify-between">
         <p className="text-center font-sans text-[10px] text-white/35 sm:text-left">
           {t(locale, "footer.note")}
         </p>
         <nav className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-          <Link
-            href={`${sitePageHref(locale, "contato")}#bug`}
-            className="font-sans text-[10px] uppercase tracking-wider text-white/45 transition-colors hover:text-arena-accent"
-          >
-            🐞 {t(locale, "nav.bug")}
-          </Link>
           {LINKS.map(({ page, key }) => (
             <Link
               key={page}
               href={sitePageHref(locale, page)}
-              className="font-sans text-[10px] uppercase tracking-wider text-white/45 transition-colors hover:text-white"
+              className={`font-sans text-[10px] uppercase tracking-wider transition-colors hover:text-white ${
+                page === "bug"
+                  ? "text-arena-accent/80 hover:text-arena-accent"
+                  : "text-white/45"
+              }`}
             >
-              {t(locale, key)}
+              {page === "bug" ? `🐞 ${t(locale, key)}` : t(locale, key)}
             </Link>
           ))}
         </nav>
