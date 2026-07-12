@@ -46,7 +46,7 @@ const DOCS: Record<
       {
         h: "Identidade e jornada",
         p: [
-          "Depois do reveal, define apelido, assinatura e estilo. A assinatura dá bônus real no jogo completo quando a jogada bate.",
+          "Depois do reveal, define apelido, assinatura e visual. O sistema de jogo vem do clube — muda se você transferir. A assinatura dá bônus real no jogo completo quando a jogada bate.",
           "A jornada mostra clube inicial e o caminho até a aposentadoria.",
         ],
       },
@@ -128,7 +128,7 @@ const DOCS: Record<
       {
         h: "Identidad y viaje",
         p: [
-          "Tras el reveal, defines apodo, firma y estilo. La firma buffea jugadas que coinciden en el partido completo.",
+          "Tras el reveal, defines apodo, firma y estilo visual. El sistema de juego viene del club — cambia si te traspasas. La firma buffea jugadas que coinciden en el partido completo.",
           "El viaje muestra el club inicial y el camino hasta el retiro.",
         ],
       },

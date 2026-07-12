@@ -87,6 +87,7 @@ import {
   emptyTrophies,
   freshCareer,
   generateTransferOffers,
+  getClubCoachStyle,
   getClubStrength,
   getLeague,
   getLegacyTierId,
@@ -111,7 +112,6 @@ import type {
   FullOffCall,
   SignatureMove,
   DripStyle,
-  CoachStyle,
   CountryId,
   GameMode,
   GameState,
@@ -415,7 +415,6 @@ interface GameActionsValue {
     nickname: string;
     signature: SignatureMove;
     drip: DripStyle;
-    coachStyle: CoachStyle;
     preferNcaa: boolean;
   }) => void;
   simulateEntireCareer: () => void;
@@ -521,7 +520,9 @@ export function GameSimulationProvider({
             nickname: saved.career.nickname ?? null,
             signature: saved.career.signature ?? null,
             drip: saved.career.drip ?? "classic",
-            coachStyle: saved.career.coachStyle ?? "halfcourt",
+            coachStyle: saved.career.clubId
+              ? getClubCoachStyle(saved.career.leagueId, saved.career.clubId)
+              : (saved.career.coachStyle ?? "halfcourt"),
             pathTrack: saved.career.pathTrack ?? "pro_direct",
             preferNcaa: saved.career.preferNcaa ?? false,
             mentorName: saved.career.mentorName ?? null,
@@ -856,6 +857,7 @@ export function GameSimulationProvider({
         injuryRisk: computeInjuryRisk(currentStats, maxStats),
         nationalCaps: 0,
         careerSeed: s.careerSeed || makeCareerSeed(),
+        coachStyle: club.coachStyle,
       };
       sfxSuccess();
       return {
@@ -1504,7 +1506,6 @@ export function GameSimulationProvider({
       nickname: string;
       signature: SignatureMove;
       drip: DripStyle;
-      coachStyle: CoachStyle;
       preferNcaa: boolean;
     }) => {
       setState((s) => applyIdentity(s, input));
@@ -1829,6 +1830,7 @@ export function GameSimulationProvider({
         annualSalary,
         contractYearsRemaining: years,
         contractCurrency: "USD" as const,
+        coachStyle: getClubCoachStyle("nba", r.teamId),
       };
       return {
         ...s,
@@ -1932,6 +1934,7 @@ export function GameSimulationProvider({
         contractCurrency: offer.currency,
         rivalClubId: rival?.id ?? null,
         rivalClubName: rival?.name ?? null,
+        coachStyle: getClubCoachStyle(offer.leagueId, offer.clubId),
       };
       sfxSuccess();
       const next = s.awaitingOffseason

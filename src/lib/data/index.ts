@@ -1,6 +1,8 @@
 import type {
   AttrDef,
   AttrWeights,
+  Club,
+  CoachStyle,
   CountryDef,
   LeagueDef,
   LegacyTier,
@@ -93,6 +95,88 @@ export const COUNTRIES: CountryDef[] = [
   { id: "cn", nameKey: "country.cn", flag: "🇨🇳", leagueId: "cba" },
 ];
 
+const COACH_CYCLE: CoachStyle[] = ["run_gun", "halfcourt", "defense_first"];
+
+/** Iconic club schemes — everything else gets a stable hash pick. */
+const CLUB_STYLE_OVERRIDES: Partial<Record<string, CoachStyle>> = {
+  // NCAA
+  duke: "halfcourt",
+  kentucky: "run_gun",
+  kansas: "halfcourt",
+  unc: "halfcourt",
+  uconn: "defense_first",
+  gonzaga: "run_gun",
+  houston: "defense_first",
+  // NBB
+  flamengo: "run_gun",
+  franca: "halfcourt",
+  minas: "defense_first",
+  // ACB / Euro
+  rmadrid: "halfcourt",
+  barca: "halfcourt",
+  baskonia: "run_gun",
+  euro_rmadrid: "halfcourt",
+  euro_barca: "halfcourt",
+  euro_efes: "run_gun",
+  euro_oly: "defense_first",
+  euro_pao: "defense_first",
+  euro_monaco: "run_gun",
+  // LNB
+  monaco: "run_gun",
+  paris: "run_gun",
+  asvel: "halfcourt",
+  // NBL
+  sydney: "halfcourt",
+  melbourne: "defense_first",
+  perth: "run_gun",
+  // CBA
+  liaoning: "defense_first",
+  guangdong: "run_gun",
+  // NBA
+  gsw: "run_gun",
+  sac: "run_gun",
+  ind: "run_gun",
+  atl: "run_gun",
+  den: "halfcourt",
+  sas: "halfcourt",
+  bos: "halfcourt",
+  nyk: "halfcourt",
+  mia: "defense_first",
+  min: "defense_first",
+  orl: "defense_first",
+  okc: "run_gun",
+  mem: "defense_first",
+  cle: "halfcourt",
+  dal: "run_gun",
+  phx: "run_gun",
+  hou: "run_gun",
+  det: "defense_first",
+};
+
+function hashCoachStyle(id: string): CoachStyle {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return COACH_CYCLE[h % COACH_CYCLE.length]!;
+}
+
+type ClubSeed = {
+  id: string;
+  name: string;
+  short: string;
+  strength: number;
+  coachStyle?: CoachStyle;
+};
+
+function clubs(list: ClubSeed[]): Club[] {
+  return list.map((c) => ({
+    id: c.id,
+    name: c.name,
+    short: c.short,
+    strength: c.strength,
+    coachStyle: c.coachStyle ?? CLUB_STYLE_OVERRIDES[c.id] ?? hashCoachStyle(c.id),
+  }));
+}
+
 export const LEAGUES: LeagueDef[] = [
   {
     id: "ncaa",
@@ -101,7 +185,7 @@ export const LEAGUES: LeagueDef[] = [
     currency: "USD",
     prestige: 0.78,
     salaryScale: 0.05,
-    clubs: [
+    clubs: clubs([
       { id: "duke", name: "Duke Blue Devils", short: "DUK", strength: 92 },
       { id: "kentucky", name: "Kentucky Wildcats", short: "UK", strength: 91 },
       { id: "kansas", name: "Kansas Jayhawks", short: "KU", strength: 90 },
@@ -112,7 +196,7 @@ export const LEAGUES: LeagueDef[] = [
       { id: "ucla", name: "UCLA Bruins", short: "UCL", strength: 84 },
       { id: "michigan", name: "Michigan Wolverines", short: "MICH", strength: 82 },
       { id: "houston", name: "Houston Cougars", short: "HOU", strength: 86 },
-    ],
+    ]),
   },
   {
     id: "nbb",
@@ -121,7 +205,7 @@ export const LEAGUES: LeagueDef[] = [
     currency: "BRL",
     prestige: 0.82,
     salaryScale: 0.35,
-    clubs: [
+    clubs: clubs([
       { id: "franca", name: "Franca", short: "FRA", strength: 88 },
       { id: "flamengo", name: "Flamengo", short: "FLA", strength: 90 },
       { id: "spfc", name: "São Paulo", short: "SAO", strength: 86 },
@@ -132,7 +216,7 @@ export const LEAGUES: LeagueDef[] = [
       { id: "brasilia", name: "Brasília", short: "BRA", strength: 76 },
       { id: "corinthians", name: "Corinthians", short: "COR", strength: 79 },
       { id: "unifacisa", name: "Unifacisa", short: "UNI", strength: 77 },
-    ],
+    ]),
   },
   {
     id: "acb",
@@ -141,7 +225,7 @@ export const LEAGUES: LeagueDef[] = [
     currency: "EUR",
     prestige: 1.05,
     salaryScale: 0.85,
-    clubs: [
+    clubs: clubs([
       { id: "rmadrid", name: "Real Madrid", short: "RMB", strength: 95 },
       { id: "barca", name: "FC Barcelona", short: "FCB", strength: 93 },
       { id: "baskonia", name: "Baskonia", short: "BAS", strength: 88 },
@@ -152,7 +236,7 @@ export const LEAGUES: LeagueDef[] = [
       { id: "murcia", name: "UCAM Murcia", short: "MUR", strength: 78 },
       { id: "gran_canaria", name: "Gran Canaria", short: "GCA", strength: 80 },
       { id: "bilbao", name: "Surne Bilbao", short: "BIL", strength: 74 },
-    ],
+    ]),
   },
   {
     id: "lnb",
@@ -161,7 +245,7 @@ export const LEAGUES: LeagueDef[] = [
     currency: "EUR",
     prestige: 0.95,
     salaryScale: 0.7,
-    clubs: [
+    clubs: clubs([
       { id: "asvel", name: "LDLC ASVEL", short: "ASV", strength: 88 },
       { id: "monaco", name: "AS Monaco", short: "ASM", strength: 92 },
       { id: "paris", name: "Paris Basketball", short: "PAR", strength: 90 },
@@ -172,7 +256,7 @@ export const LEAGUES: LeagueDef[] = [
       { id: "le_mans", name: "Le Mans Sarthe", short: "LMS", strength: 79 },
       { id: "cholet", name: "Cholet Basket", short: "CHO", strength: 76 },
       { id: "lyon", name: "LDLC ASVEL Bourg", short: "BOU", strength: 77 },
-    ],
+    ]),
   },
   {
     id: "nbl",
@@ -181,7 +265,7 @@ export const LEAGUES: LeagueDef[] = [
     currency: "AUD",
     prestige: 0.9,
     salaryScale: 0.55,
-    clubs: [
+    clubs: clubs([
       { id: "sydney", name: "Sydney Kings", short: "SYD", strength: 90 },
       { id: "melbourne", name: "Melbourne United", short: "MEL", strength: 88 },
       { id: "brisbane", name: "Brisbane Bullets", short: "BRI", strength: 82 },
@@ -190,7 +274,7 @@ export const LEAGUES: LeagueDef[] = [
       { id: "nz_breakers", name: "New Zealand Breakers", short: "NZB", strength: 78 },
       { id: "illawarra", name: "Illawarra Hawks", short: "ILL", strength: 84 },
       { id: "cairns", name: "Cairns Taipans", short: "CAI", strength: 76 },
-    ],
+    ]),
   },
   {
     id: "cba",
@@ -199,7 +283,7 @@ export const LEAGUES: LeagueDef[] = [
     currency: "CNY",
     prestige: 0.88,
     salaryScale: 0.75,
-    clubs: [
+    clubs: clubs([
       { id: "guangdong", name: "Guangdong Southern Tigers", short: "GDS", strength: 90 },
       { id: "liaoning", name: "Liaoning Flying Leopards", short: "LIA", strength: 92 },
       { id: "zhejiang", name: "Zhejiang Lions", short: "ZHE", strength: 86 },
@@ -208,7 +292,7 @@ export const LEAGUES: LeagueDef[] = [
       { id: "xinjiang", name: "Xinjiang Flying Tigers", short: "XIN", strength: 83 },
       { id: "shandong", name: "Shandong Hi-Speed", short: "SD", strength: 80 },
       { id: "guangzhou", name: "Guangzhou Loong Lions", short: "GZL", strength: 78 },
-    ],
+    ]),
   },
   {
     id: "euro",
@@ -217,7 +301,7 @@ export const LEAGUES: LeagueDef[] = [
     currency: "EUR",
     prestige: 1.18,
     salaryScale: 1.15,
-    clubs: [
+    clubs: clubs([
       { id: "euro_rmadrid", name: "Real Madrid", short: "RMB", strength: 96 },
       { id: "euro_barca", name: "FC Barcelona", short: "FCB", strength: 94 },
       { id: "euro_efes", name: "Anadolu Efes", short: "EFE", strength: 92 },
@@ -228,7 +312,7 @@ export const LEAGUES: LeagueDef[] = [
       { id: "euro_mac", name: "Maccabi Tel Aviv", short: "MTA", strength: 86 },
       { id: "euro_zalgiris", name: "Žalgiris Kaunas", short: "ZAL", strength: 84 },
       { id: "euro_milano", name: "Olimpia Milano", short: "MIL", strength: 85 },
-    ],
+    ]),
   },
   {
     id: "nba",
@@ -237,7 +321,7 @@ export const LEAGUES: LeagueDef[] = [
     currency: "USD",
     prestige: 1.35,
     salaryScale: 2.4,
-    clubs: [
+    clubs: clubs([
       { id: "bos", name: "Boston Celtics", short: "BOS", strength: 94 },
       { id: "okc", name: "Oklahoma City Thunder", short: "OKC", strength: 93 },
       { id: "den", name: "Denver Nuggets", short: "DEN", strength: 91 },
@@ -268,7 +352,7 @@ export const LEAGUES: LeagueDef[] = [
       { id: "det", name: "Detroit Pistons", short: "DET", strength: 80 },
       { id: "cha", name: "Charlotte Hornets", short: "CHA", strength: 72 },
       { id: "bkn", name: "Brooklyn Nets", short: "BKN", strength: 74 },
-    ],
+    ]),
   },
 ];
 
@@ -287,8 +371,8 @@ export const LEGACY_TIERS: LegacyTier[] = [
 export const STORAGE_KEY = "lenda-da-quadra-v9";
 /** Migrate from previous persist key on first load. */
 export const STORAGE_KEY_LEGACY = "lenda-da-quadra-v8";
-/** Reachable draft window after strong early growth from age 16. */
-export const NBA_DRAFT_OVR = 68;
+/** Draft window after solid early growth — typically seasons 3–4. */
+export const NBA_DRAFT_OVR = 69;
 /** Lottery / Top-10 stock — below this, pick is capped outside top 10. */
 export const NBA_DRAFT_LOTTERY_OVR = 78;
 export const NBA_DRAFT_MAX_AGE = 23;
@@ -296,8 +380,8 @@ export const NBA_DRAFT_MIN_SEASONS = 2;
 export const NBA_FA_OVR = 76;
 export const NBA_FA_MIN_AGE = 22;
 export const NBA_FA_MIN_SEASONS = 2;
-/** EuroLeague: bridge out of domestic by ~season 2. */
-export const EURO_OVR = 64;
+/** EuroLeague: bridge out of domestic by ~season 2–3. */
+export const EURO_OVR = 65;
 export const EURO_MIN_SEASONS = 1;
 export const MARKET_COST_UNIT = 250_000;
 export const MARKET_COST_HIGH = 3;

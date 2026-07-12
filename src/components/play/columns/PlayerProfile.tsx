@@ -171,6 +171,12 @@ export function PlayerProfile() {
             <span className="text-white/70">{career.rivalClubName}</span>
           </p>
         )}
+        <p className="mt-1.5 font-sans text-[10px] text-white/40">
+          {tr("dash.clubStyle")}:{" "}
+          <span className="text-white/70">
+            {tr(`coach.${career.coachStyle ?? "halfcourt"}`)}
+          </span>
+        </p>
         <div className="mt-1.5 flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-arena-bg/40 px-2 py-1.5">
           <div className="min-w-0">
             <p className="font-sans text-[9px] font-medium uppercase tracking-wider text-white/40">

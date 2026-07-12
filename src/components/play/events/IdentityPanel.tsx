@@ -3,19 +3,19 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import {
-  COACH_STYLES,
   DRIP_OPTIONS,
   SIGNATURES,
   suggestNickname,
 } from "@/lib/careerFlavor";
 import { useGameActions, useGameState } from "@/hooks/useGameSimulation";
-import type { CoachStyle, DripStyle, SignatureMove } from "@/types/game";
+import type { DripStyle, SignatureMove } from "@/types/game";
 
-/** Post-draft identity: nickname, signature, drip, path. */
+/** Post-draft identity: nickname, signature, drip, path. Club scheme is fixed by the team. */
 export function IdentityPanel() {
   const { state } = useGameState();
   const { confirmIdentity, tr } = useGameActions();
   const player = state.player;
+  const career = state.career;
   const [nickname, setNickname] = useState(() =>
     player
       ? suggestNickname(player.name, player.countryId)
@@ -23,12 +23,13 @@ export function IdentityPanel() {
   );
   const [signature, setSignature] = useState<SignatureMove>("stepback");
   const [drip, setDrip] = useState<DripStyle>("classic");
-  const [coach, setCoach] = useState<CoachStyle>("halfcourt");
   const [preferNcaa, setPreferNcaa] = useState(
     player?.countryId === "us",
   );
 
   if (!player) return null;
+
+  const clubStyle = career?.coachStyle ?? "halfcourt";
 
   return (
     <div className="w-full max-w-md text-center">
@@ -93,25 +94,19 @@ export function IdentityPanel() {
         ))}
       </div>
 
-      <p className="mt-4 font-sans text-[10px] uppercase text-white/40">
-        {tr("identity.coach")}
-      </p>
-      <div className="mt-1 grid gap-1.5">
-        {COACH_STYLES.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => setCoach(c.id)}
-            className={`rounded-lg border px-2 py-2 font-display text-xs uppercase ${
-              coach === c.id
-                ? "border-arena-accent bg-arena-accent/15 text-arena-accent"
-                : "border-white/15 text-white/70"
-            }`}
-          >
-            {tr(c.labelKey)}
-          </button>
-        ))}
-      </div>
+      {career?.clubName && (
+        <div className="mt-4 rounded-lg border border-white/10 bg-arena-bg/50 px-3 py-2 text-left">
+          <p className="font-sans text-[10px] uppercase text-white/40">
+            {tr("identity.clubStyle")}
+          </p>
+          <p className="mt-0.5 font-display text-sm uppercase text-arena-accent">
+            {tr(`coach.${clubStyle}`)}
+          </p>
+          <p className="mt-0.5 font-sans text-[11px] text-white/45">
+            {tr("identity.clubStyleHint", { club: career.clubName })}
+          </p>
+        </div>
+      )}
 
       <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 text-left font-sans text-xs text-white/60">
         <input
@@ -129,7 +124,6 @@ export function IdentityPanel() {
             nickname: nickname.trim() || suggestNickname(player.name, player.countryId),
             signature,
             drip,
-            coachStyle: coach,
             preferNcaa,
           })
         }

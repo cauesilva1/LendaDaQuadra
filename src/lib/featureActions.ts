@@ -10,7 +10,6 @@ import { makeCareerSeed, normalizeSeed } from "@/lib/rng";
 import { simulateFullCareer } from "@/lib/simulateFullCareer";
 import { clamp, uid } from "@/lib/utils";
 import type {
-  CoachStyle,
   DripStyle,
   GameState,
   PressChoice,
@@ -23,7 +22,6 @@ export function applyIdentity(
     nickname: string;
     signature: SignatureMove;
     drip: DripStyle;
-    coachStyle: CoachStyle;
     preferNcaa: boolean;
   },
 ): GameState {
@@ -43,7 +41,6 @@ export function applyIdentity(
       nickname: input.nickname,
       signature: input.signature,
       drip: input.drip,
-      coachStyle: input.coachStyle,
       preferNcaa: input.preferNcaa,
       pathTrack,
       mentorName: mentor?.name ?? null,

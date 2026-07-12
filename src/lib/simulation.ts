@@ -23,6 +23,7 @@ import type {
   AttrStats,
   AwardAnnouncement,
   CareerState,
+  CoachStyle,
   ContractOffer,
   CountryId,
   FinalsContext,
@@ -235,6 +236,43 @@ export function getCountry(id: CountryId) {
 export function getClubStrength(leagueId: LeagueId, clubId: string): number {
   const club = getLeague(leagueId).clubs.find((c) => c.id === clubId);
   return club?.strength ?? 75;
+}
+
+export function getClubCoachStyle(
+  leagueId: LeagueId,
+  clubId: string,
+): CoachStyle {
+  const club = getLeague(leagueId).clubs.find((c) => c.id === clubId);
+  return club?.coachStyle ?? "halfcourt";
+}
+
+/** Sync career coach style from the current club (call on join/transfer). */
+export function syncCareerCoachStyle(career: CareerState): CareerState {
+  if (!career.clubId) return career;
+  return {
+    ...career,
+    coachStyle: getClubCoachStyle(career.leagueId, career.clubId),
+  };
+}
+
+/**
+ * How well the player's tools match the club scheme.
+ * ~0.96 mismatch → ~1.06 strong fit (medium swing on season performance).
+ */
+export function coachSchemeFit(
+  style: CoachStyle,
+  slots: Partial<AttrStats>,
+): number {
+  const avg = (a: number, b: number, c: number) => (a + b + c) / 3;
+  let focus: number;
+  if (style === "run_gun") {
+    focus = avg(slots.ath ?? 70, slots.drb ?? 70, slots.fin ?? 70);
+  } else if (style === "defense_first") {
+    focus = avg(slots.def ?? 70, slots.reb ?? 70, slots.ath ?? 70);
+  } else {
+    focus = avg(slots.pass ?? 70, slots.shot ?? 70, slots.clu ?? 70);
+  }
+  return clamp(0.96 + ((focus - 68) / 30) * 0.1, 0.96, 1.06);
 }
 
 export function computeMarketValue(
@@ -623,9 +661,9 @@ function computeBoxStats(
 }
 
 /**
- * NBA title odds — deliberately harsh.
- * Elite OVR + top franchise + peak age ≈ ~18–22% per Finals appearance.
- * Average star on mid team ≈ 4–8%. Dynasties of 8 require near-perfect builds.
+ * NBA title odds — medium difficulty.
+ * Good star on contender ≈ 18–28% per Finals; elite peak ≈ 32–38%.
+ * Still rare enough that rings feel special across a career.
  */
 export function computeNbaTitleChance(
   ovr: number,
@@ -634,17 +672,17 @@ export function computeNbaTitleChance(
   seasonsPlayed: number,
   slots: Partial<AttrStats>,
 ): number {
-  const ovrFactor = clamp((ovr - 78) / 22, 0, 1); // 0 at 78, 1 at 100
-  const franchiseFactor = clamp((franchiseStrength - 72) / 26, 0, 1);
+  const ovrFactor = clamp((ovr - 76) / 20, 0, 1); // 0 at 76, 1 at 96
+  const franchiseFactor = clamp((franchiseStrength - 74) / 22, 0, 1);
   const peak = ageFactor(age) * fatigueFactor(age, seasonsPlayed);
-  const clutch = ((slots.clu ?? 70) / 99) * 0.15;
+  const clutch = ((slots.clu ?? 70) / 99) * 0.12;
   const raw =
-    0.025 +
-    ovrFactor * 0.12 +
-    franchiseFactor * 0.09 +
-    peak * 0.04 +
+    0.06 +
+    ovrFactor * 0.18 +
+    franchiseFactor * 0.12 +
+    peak * 0.05 +
     clutch;
-  return clamp(raw, 0.02, 0.22);
+  return clamp(raw, 0.05, 0.38);
 }
 
 export function computeLeagueTitleChance(
@@ -653,13 +691,14 @@ export function computeLeagueTitleChance(
   age: number,
   prestige: number,
 ): number {
-  const ovrFactor = clamp((ovr - 68) / 28, 0, 1);
-  const franchiseFactor = clamp((franchiseStrength - 70) / 28, 0, 1);
+  // Domestic/Euro: medium — solid seasons win often; not every year automatic.
+  const ovrFactor = clamp((ovr - 70) / 26, 0, 1);
+  const franchiseFactor = clamp((franchiseStrength - 72) / 26, 0, 1);
   const peak = ageFactor(age);
   return clamp(
-    0.14 + ovrFactor * 0.38 + franchiseFactor * 0.22 + peak * 0.1 * prestige,
+    0.12 + ovrFactor * 0.34 + franchiseFactor * 0.2 + peak * 0.09 * prestige,
     0.1,
-    0.62,
+    0.55,
   );
 }
 
@@ -696,9 +735,9 @@ function buildPendingFinals(
         career.age,
         career.seasonsPlayed,
         slots,
-      ) + 0.08,
-      0.08,
-      0.32,
+      ) + 0.12,
+      0.14,
+      0.5,
     );
     titleKey = "finals.conference";
   } else if (competition === "nba") {
@@ -980,7 +1019,12 @@ export function simulateSeason(state: GameState): SimulateSeasonResult {
     0.92 +
     (franchiseStrength / 100) * 0.16 +
     (mods.chemistry ?? 0) * 0.01;
-  const performance = ovr * af * fat * league.prestige * teamBoost * noise;
+  const scheme = coachSchemeFit(
+    career.coachStyle ?? getClubCoachStyle(career.leagueId, career.clubId),
+    slots,
+  );
+  const performance =
+    ovr * af * fat * league.prestige * teamBoost * scheme * noise;
 
   const box = computeBoxStats(slots, player.posId, performance, career.inNba, {
     ppgPenalty: mods.ppgPenalty ?? 0,
@@ -1084,9 +1128,9 @@ export function simulateSeason(state: GameState): SimulateSeasonResult {
   if (career.inNba) {
     if (rank <= cutoff) {
       const confGate = clamp(
-        0.35 + (9 - rank) * 0.08 + (performance - 70) / 90,
-        0.28,
-        0.78,
+        0.4 + (9 - rank) * 0.08 + (performance - 68) / 85,
+        0.34,
+        0.86,
       );
       if (Math.random() < confGate) {
         pendingFinals = buildPendingFinals(
@@ -1100,14 +1144,13 @@ export function simulateSeason(state: GameState): SimulateSeasonResult {
     }
   } else if (rank <= cutoff) {
     const isEuro = career.leagueId === "euro";
-    // Stars on contenders should reach finals most years — titles are the fun payoff
     const finalsGate = clamp(
-      (isEuro ? 0.42 : 0.38) +
-        (9 - rank) * 0.06 +
-        (performance - 58) / 55 +
-        (ovr - 70) / 80,
-      isEuro ? 0.32 : 0.3,
-      isEuro ? 0.88 : 0.85,
+      (isEuro ? 0.38 : 0.35) +
+        (9 - rank) * 0.055 +
+        (performance - 58) / 58 +
+        (ovr - 70) / 85,
+      isEuro ? 0.3 : 0.28,
+      isEuro ? 0.82 : 0.78,
     );
     if (Math.random() < finalsGate) {
       pendingFinals = buildPendingFinals(career, ovr, slots, "league");

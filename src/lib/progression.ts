@@ -101,15 +101,15 @@ export function growTowardMax(
 ): AttrStats {
   const cur = completeStats(current);
   const max = completeStats(maxStats, 80);
-  // Teen window — aggressive so Euro/NBA stay reachable in 2–4 seasons
+  // Medium growth — Euro/Draft around seasons 3–4 without feeling free
   const bumps =
-    age <= 18 ? 8 : age <= 21 ? 6 : age <= 24 ? 5 : age <= 28 ? 3 : age <= 31 ? 2 : 1;
+    age <= 18 ? 7 : age <= 21 ? 5 : age <= 24 ? 4 : age <= 28 ? 3 : age <= 31 ? 2 : 1;
   const keys = shuffleKeys();
   let left = bumps;
   for (const k of keys) {
     if (left <= 0) break;
     if (cur[k] >= max[k]) continue;
-    const gain = 1 + (Math.random() < 0.42 ? 1 : 0);
+    const gain = 1 + (Math.random() < 0.38 ? 1 : 0);
     cur[k] = clamp(cur[k] + gain, 0, max[k]);
     left--;
   }
@@ -124,7 +124,7 @@ export function seasonDevelopmentBump(
 ): AttrStats {
   const cur = completeStats(current);
   const max = completeStats(maxStats, 80);
-  const bumps = age <= 21 ? 3 : age <= 26 ? 2 : 1;
+  const bumps = age <= 21 ? 2 : age <= 26 ? 2 : 1;
   const keys = shuffleKeys();
   let left = bumps;
   for (const k of keys) {

@@ -15,6 +15,7 @@ import {
   computeOfferSalary,
   liveStats,
   applyFinalsResult,
+  getClubCoachStyle,
 } from "@/lib/simulation";
 import { clamp, uid } from "@/lib/utils";
 import type { DocumentaryLine, GameState, PressItem } from "@/types/game";
@@ -139,6 +140,7 @@ export function simulateFullCareer(state: GameState): {
         ),
         contractYearsRemaining: pick.pick <= 14 ? 3 : 2,
         contractCurrency: "USD",
+        coachStyle: getClubCoachStyle("nba", pick.teamId),
       };
       drafted = true;
       doc.push({
@@ -171,6 +173,7 @@ export function simulateFullCareer(state: GameState): {
           contractCurrency: best.currency,
           inNba: !!best.isNba || nextCareer.inNba,
           offers: [],
+          coachStyle: getClubCoachStyle(best.leagueId, best.clubId),
         };
         doc.push({
           season: nextCareer.season,

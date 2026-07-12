@@ -285,6 +285,8 @@ export interface Club {
   name: string;
   short: string;
   strength: number;
+  /** System / coach identity of the club — changes when you transfer. */
+  coachStyle: CoachStyle;
 }
 
 export interface LeagueDef {

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type BugBody = {
   message?: string;
