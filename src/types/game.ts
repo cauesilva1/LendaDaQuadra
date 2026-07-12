@@ -51,7 +51,80 @@ export type CenterView =
   | "simulating"
   | "journey"
   | "national_callup"
+  | "full_game"
+  | "identity"
+  | "timeline"
+  | "museum"
+  | "quick_crunch"
+  | "daily_posse"
+  | "spectator"
+  | "press_choice"
+  | "dream"
+  | "street3x3"
+  | "allstar"
+  | "contract_talk"
   | "idle";
+
+export type SignatureMove =
+  | "stepback"
+  | "euro"
+  | "poster"
+  | "floater"
+  | "catchshoot";
+
+export type DripStyle = "classic" | "flashy" | "street" | "minimal";
+
+export type CoachStyle = "run_gun" | "halfcourt" | "defense_first";
+
+export type PathTrack = "pro_direct" | "ncaa" | "europe_youth";
+
+export type MuseumItem = {
+  id: string;
+  kind: "shoe" | "jersey" | "medal" | "draft_pick" | "clip";
+  labelKey: string;
+  season: number;
+};
+
+export type Teammate = {
+  id: string;
+  name: string;
+  role: "mentor" | "rival_teammate" | "rookie";
+  chem: number;
+};
+
+export type PressChoice = {
+  id: string;
+  headlineKey: string;
+  bodyKey: string;
+  optionA: { id: string; labelKey: string; tone: "good" | "warn" };
+  optionB: { id: string; labelKey: string; tone: "good" | "warn" };
+};
+
+export type DreamEvent = {
+  kind: "dream" | "nightmare";
+  titleKey: string;
+  bodyKey: string;
+  clutchMod: number;
+};
+
+export type NationalBracketRound = "group" | "semi" | "final";
+
+export type DailyChallenge = {
+  dateKey: string;
+  seed: string;
+  kind: "posse" | "crunch";
+  bestScore: number | null;
+};
+
+export type DocumentaryLine = {
+  season: number;
+  age: number;
+  year: number;
+  ovr: number;
+  club: string;
+  lineKey: string;
+  vars?: Record<string, string | number>;
+};
 
 export type FinalsCompetition =
   | "conference"
@@ -63,6 +136,8 @@ export type FinalsCompetition =
 
 export type SeasonBeat = "key_game" | "mid" | "sim";
 
+export type NationalRole = "fringe" | "rotation" | "star";
+
 export type NationalCallup = {
   kind: "world_cup" | "olympics";
   year: number;
@@ -70,7 +145,38 @@ export type NationalCallup = {
   bodyKey: string;
   /** Soft minutes path vs star path */
   minutesLikely: boolean;
+  role?: NationalRole;
+  expectedMinutes?: number;
 };
+
+export type FullOffCall =
+  | "three"
+  | "drive"
+  | "pnr"
+  | "iso"
+  | "post"
+  | "kick";
+
+export type FullDefCall = "press" | "pack" | "switch" | "help" | "foul";
+
+export type FullPlayLog = { id: string; message: string };
+
+export interface FullGameState {
+  finals: FinalsContext;
+  role: NationalRole;
+  quarter: 1 | 2 | 3 | 4;
+  clock: number;
+  playerScore: number;
+  opponentScore: number;
+  possession: "offense" | "defense";
+  possessionsLeft: number;
+  phase: "playing" | "quarter_break" | "result";
+  log: FullPlayLog[];
+  lastNote: string | null;
+  resolved: boolean;
+  winsGame: boolean | null;
+  expectedMinutes: number;
+}
 
 export type AwardId =
   | "rei_america"
@@ -309,6 +415,10 @@ export interface FinalsContext {
   franchiseStrength: number;
   /** Present for in-season key games */
   keyKind?: "rival" | "ranking" | "showcase";
+  /** Clutch endgame vs full 4-quarter command mode */
+  playMode?: "clutch" | "full";
+  nationalRole?: NationalRole;
+  expectedMinutes?: number;
 }
 
 export type CourtZoneKind = "three" | "mid" | "paint";
@@ -399,6 +509,26 @@ export interface CareerState {
   /** Persistent rival franchise for narrative press */
   rivalClubId: string | null;
   rivalClubName: string | null;
+  /** Shared seed for reproducible careers */
+  careerSeed: string;
+  nickname: string | null;
+  signature: SignatureMove | null;
+  drip: DripStyle;
+  coachStyle: CoachStyle;
+  pathTrack: PathTrack;
+  preferNcaa: boolean;
+  mentorName: string | null;
+  teammates: Teammate[];
+  museum: MuseumItem[];
+  unlockedLegendIds: string[];
+  rivalWins: number;
+  rivalLosses: number;
+  allStarCount: number;
+  familyMorale: number;
+  liveVoteEnabled: boolean;
+  clubBudget: number;
+  clutchMod: number;
+  documentary: string[];
 }
 
 export interface PlayerIdentity {
@@ -438,12 +568,26 @@ export interface GameState {
   keyGamesQueue: FinalsContext[];
   /** National team invitation pending after season */
   pendingNational: NationalCallup | null;
-  /** Whether active clutch is a finals or in-season key game */
-  clutchKind: "finals" | "key_game" | null;
+  /** Queued national-team games after accepting a call-up */
+  nationalGamesQueue: FinalsContext[];
+  /** Wins during the current national slate (for trophies) */
+  nationalWins: number;
+  /** Full 4-quarter playable game */
+  fullGame: FullGameState | null;
+  /** Whether active clutch is a finals, key game, or national */
+  clutchKind: "finals" | "key_game" | "national" | null;
   /** Temporary attribute deltas for sidebar flash (+2 ARR) */
   statFlash: Partial<Record<AttrKey, number>> | null;
   /** High-contrast impact toasts in the center column */
   effectToasts: ImpactToast[];
+  careerSeed: string;
+  pendingPressChoice: PressChoice | null;
+  pendingDream: DreamEvent | null;
+  spectatorDoc: DocumentaryLine[];
+  dailyChallenge: DailyChallenge | null;
+  identityDone: boolean;
+  /** Soft gate: first season hub highlights until dismissed */
+  hubTourDone: boolean;
 }
 
 export interface LegacyTier {

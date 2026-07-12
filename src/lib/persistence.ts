@@ -16,6 +16,12 @@ function toPersistable(state: GameState): GameState {
         : state.clutch
           ? { ...state.clutch, log: state.clutch.log.slice(0, 4) }
           : null,
+    fullGame:
+      state.centerView === "full_game" || state.fullGame?.phase === "playing"
+        ? state.fullGame
+        : state.fullGame
+          ? { ...state.fullGame, log: state.fullGame.log.slice(0, 4) }
+          : null,
   };
 }
 
@@ -39,6 +45,8 @@ export function loadGameState(): GameState | null {
     const raw =
       localStorage.getItem(STORAGE_KEY) ??
       localStorage.getItem(STORAGE_KEY_LEGACY) ??
+      localStorage.getItem("lenda-da-quadra-v7") ??
+      localStorage.getItem("lenda-da-quadra-v6") ??
       localStorage.getItem("lenda-da-quadra-v5");
     if (!raw) return null;
     const parsed = JSON.parse(raw) as GameState;

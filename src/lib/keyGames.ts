@@ -51,6 +51,8 @@ export function buildKeyGames(
       winChanceOnSkip: winChance,
       franchiseStrength: franchise,
       keyKind: kind,
+      // First game of the season is a full 4-quarter command game
+      playMode: kind === "rival" ? ("full" as const) : ("clutch" as const),
     };
   });
 }

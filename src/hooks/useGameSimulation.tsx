@@ -27,6 +27,7 @@ import {
   createStarterStats,
   emptySeasonMods,
   growTowardMax,
+  seasonDevelopmentBump,
   pickMidEvent,
   pickOffseasonEvent,
 } from "@/lib/progression";
@@ -54,7 +55,27 @@ import {
 } from "@/lib/injury";
 import { buildKeyGames } from "@/lib/keyGames";
 import {
+  applyIdentity,
+  applyPressChoice,
+  maybeInjectDrama,
+  runSimulateCareer,
+  startQuickCrunchState,
+  todayChallengeSeed,
+} from "@/lib/featureActions";
+import { makeCareerSeed, normalizeSeed } from "@/lib/rng";
+import { museumUnlock } from "@/lib/careerFlavor";
+import {
+  buildNationalGames,
+  enrichNationalCallup,
+} from "@/lib/nationalGames";
+import {
+  advanceFullQuarter,
+  resolveFullDefense,
+  resolveFullOffense,
+} from "@/lib/fullGame";
+import {
   buildSeasonQueue,
+  continueNationalQueue,
   continueSeasonQueue,
 } from "@/lib/seasonFlow";
 import {
@@ -86,6 +107,11 @@ import type {
   CenterView,
   DefenseAction,
   OffenseAction,
+  FullDefCall,
+  FullOffCall,
+  SignatureMove,
+  DripStyle,
+  CoachStyle,
   CountryId,
   GameMode,
   GameState,
@@ -118,6 +144,8 @@ function openOffseason(s: GameState, career: NonNullable<GameState["career"]>): 
     pendingFinals: null,
     clutch: null,
     clutchKind: null,
+    fullGame: null,
+    nationalGamesQueue: [],
     awardQueue: [],
     activeAward: null,
     pendingEvent: pickOffseasonEvent(),
@@ -146,26 +174,76 @@ function maybeNationalOrOffseason(
   ) {
     return openOffseason(s, career);
   }
+  const recent =
+    career.perfHistory.length > 0
+      ? career.perfHistory[career.perfHistory.length - 1]!
+      : 70;
+  const pendingNational = enrichNationalCallup(
+    {
+      kind,
+      year,
+      titleKey: kind === "world_cup" ? "national.wc" : "national.oly",
+      bodyKey: kind === "world_cup" ? "national.wcBody" : "national.olyBody",
+      minutesLikely: o < 72,
+    },
+    o,
+    career.seasonsPlayed,
+    recent,
+  );
   return {
     ...s,
     career,
     pendingFinals: null,
     clutch: null,
     clutchKind: null,
+    fullGame: null,
     awardQueue: [],
     activeAward: null,
     pendingEvent: null,
     awaitingOffseason: true,
-    pendingNational: {
-      kind,
-      year,
-      titleKey: kind === "world_cup" ? "national.wc" : "national.oly",
-      bodyKey: kind === "world_cup" ? "national.wcBody" : "national.olyBody",
-      minutesLikely: o < 76,
-    },
+    pendingNational,
+    nationalGamesQueue: [],
+    nationalWins: 0,
     centerView: "national_callup",
     phase: "career",
   };
+}
+
+function finishNationalSlate(
+  s: GameState,
+  career: NonNullable<GameState["career"]>,
+  callKind: "world_cup" | "olympics" | null,
+): GameState {
+  const wins = s.nationalWins ?? 0;
+  let next = { ...career };
+  if (callKind && wins > 0) {
+    next = {
+      ...next,
+      trophies: {
+        ...next.trophies,
+        worldCups:
+          callKind === "world_cup"
+            ? next.trophies.worldCups + (wins >= 2 ? 1 : 0)
+            : next.trophies.worldCups,
+        olympicRuns:
+          callKind === "olympics"
+            ? (next.trophies.olympicRuns ?? 0) + (wins >= 1 ? 1 : 0)
+            : (next.trophies.olympicRuns ?? 0),
+      },
+      marketBoost: (next.marketBoost ?? 0) + (wins >= 2 ? 2 : 1),
+    };
+  }
+  return openOffseason(
+    {
+      ...s,
+      nationalGamesQueue: [],
+      nationalWins: 0,
+      clutch: null,
+      clutchKind: null,
+      fullGame: null,
+    },
+    next,
+  );
 }
 
 function applySimResult(
@@ -174,7 +252,11 @@ function applySimResult(
   extraOffers = false,
 ): GameState {
   let career = sim.career;
-  const stats = liveStats(s);
+  const stats = seasonDevelopmentBump(
+    liveStats(s),
+    s.maxStats,
+    career.age,
+  );
   const o = computeOverall(stats, s.player!.posId);
   let offers = career.offers;
   const contractExpired = (career.contractYearsRemaining ?? 0) <= 0;
@@ -217,10 +299,12 @@ function applySimResult(
   if (view === "finals_prompt") {
     return {
       ...s,
+      ...syncStats(stats),
       career,
       pendingFinals: sim.pendingFinals,
       clutch: null,
       clutchKind: null,
+      fullGame: null,
       awardQueue: sim.awards,
       activeAward: null,
       pendingEvent: null,
@@ -236,10 +320,12 @@ function applySimResult(
     const q = queueAwards(sim.awards);
     return {
       ...s,
+      ...syncStats(stats),
       career,
       pendingFinals: null,
       clutch: null,
       clutchKind: null,
+      fullGame: null,
       ...q,
       pendingEvent: null,
       awaitingOffseason: true,
@@ -249,7 +335,29 @@ function applySimResult(
     };
   }
 
-  return maybeNationalOrOffseason(s, career);
+  const withGrowth = {
+    ...s,
+    ...syncStats(stats),
+    effectToasts: [
+      {
+        id: uid("toast"),
+        tone: "good" as const,
+        labelKey: "impact.ovrUp",
+        vars: { ovr: o },
+      },
+      ...(s.effectToasts ?? []),
+    ],
+  };
+  const next = maybeNationalOrOffseason(withGrowth, career);
+  if (
+    next.centerView === "national_callup" ||
+    next.centerView === "offseason_event" ||
+    next.centerView === "finals_prompt" ||
+    next.centerView === "award"
+  ) {
+    return next;
+  }
+  return maybeInjectDrama(next);
 }
 
 interface GameStateValue {
@@ -271,6 +379,7 @@ interface GameActionsValue {
     countryId: CountryId;
     posId: PositionId;
     mode: GameMode;
+    seed?: string;
   }) => void;
   takeAttr: (attr: AttrKey) => void;
   rerollLegend: () => void;
@@ -297,6 +406,29 @@ interface GameActionsValue {
   resolveCrunchOffense: (action: OffenseAction) => void;
   resolveCrunchDefense: (action: DefenseAction) => void;
   finishClutch: () => void;
+  resolveFullOff: (action: FullOffCall) => void;
+  resolveFullDef: (action: FullDefCall) => void;
+  nextFullQuarter: () => void;
+  finishFullGame: () => void;
+  confirmIdentity: (input: {
+    nickname: string;
+    signature: SignatureMove;
+    drip: DripStyle;
+    coachStyle: CoachStyle;
+    preferNcaa: boolean;
+  }) => void;
+  simulateEntireCareer: () => void;
+  startQuickCrunch: () => void;
+  openDailyChallenge: () => void;
+  resolvePressChoice: (optionId: string) => void;
+  resolveDream: () => void;
+  finishStreet3x3: (play: boolean) => void;
+  finishAllStar: () => void;
+  resolveContractTalk: (choice: "stay" | "trade" | "renegotiate") => void;
+  copyClipMoment: () => Promise<boolean>;
+  setCareerSeed: (seed: string) => void;
+  toggleLiveVote: () => void;
+  dismissHubTour: () => void;
   dismissAward: () => void;
   resolveSeasonEvent: (optionId: string) => void;
   tr: (key: string, vars?: Record<string, string | number>) => string;
@@ -381,6 +513,28 @@ export function GameSimulationProvider({
                 : "USD"),
             rivalClubId: saved.career.rivalClubId ?? null,
             rivalClubName: saved.career.rivalClubName ?? null,
+            careerSeed:
+              saved.career.careerSeed ||
+              saved.careerSeed ||
+              "",
+            nickname: saved.career.nickname ?? null,
+            signature: saved.career.signature ?? null,
+            drip: saved.career.drip ?? "classic",
+            coachStyle: saved.career.coachStyle ?? "halfcourt",
+            pathTrack: saved.career.pathTrack ?? "pro_direct",
+            preferNcaa: saved.career.preferNcaa ?? false,
+            mentorName: saved.career.mentorName ?? null,
+            teammates: saved.career.teammates ?? [],
+            museum: saved.career.museum ?? [],
+            unlockedLegendIds: saved.career.unlockedLegendIds ?? [],
+            rivalWins: saved.career.rivalWins ?? 0,
+            rivalLosses: saved.career.rivalLosses ?? 0,
+            allStarCount: saved.career.allStarCount ?? 0,
+            familyMorale: saved.career.familyMorale ?? 50,
+            liveVoteEnabled: saved.career.liveVoteEnabled ?? false,
+            clubBudget: saved.career.clubBudget ?? 75,
+            clutchMod: saved.career.clutchMod ?? 0,
+            documentary: saved.career.documentary ?? [],
           }
         : null;
       const legacySlots =
@@ -460,7 +614,18 @@ export function GameSimulationProvider({
           seasonQueue: saved.seasonQueue ?? [],
           keyGamesQueue: saved.keyGamesQueue ?? [],
           pendingNational: saved.pendingNational ?? null,
+          nationalGamesQueue: saved.nationalGamesQueue ?? [],
+          nationalWins: saved.nationalWins ?? 0,
+          fullGame: saved.fullGame ?? null,
           clutchKind: saved.clutchKind ?? null,
+          careerSeed: saved.careerSeed || career?.careerSeed || "",
+          pendingPressChoice: saved.pendingPressChoice ?? null,
+          pendingDream: saved.pendingDream ?? null,
+          spectatorDoc: saved.spectatorDoc ?? [],
+          dailyChallenge: saved.dailyChallenge ?? null,
+          identityDone:
+            saved.identityDone ?? !!career?.nickname,
+          hubTourDone: saved.hubTourDone ?? false,
           draftAnimating: false,
           justFilledAttr: null,
           statFlash: null,
@@ -557,10 +722,14 @@ export function GameSimulationProvider({
       countryId: CountryId;
       posId: PositionId;
       mode: GameMode;
+      seed?: string;
     }) => {
+      const seed = input.seed ? normalizeSeed(input.seed) : makeCareerSeed();
       setState((s) => ({
         ...s,
         phase: "howto",
+        careerSeed: seed,
+        identityDone: false,
         player: {
           name: input.name.trim() || "Prospect",
           countryId: input.countryId,
@@ -581,6 +750,9 @@ export function GameSimulationProvider({
         activeAward: null,
         pendingEvent: null,
         pendingNational: null,
+        nationalGamesQueue: [],
+        nationalWins: 0,
+        fullGame: null,
         seasonQueue: [],
         keyGamesQueue: [],
         awaitingOffseason: false,
@@ -682,6 +854,7 @@ export function GameSimulationProvider({
         rivalClubName: rival?.name ?? null,
         injuryRisk: computeInjuryRisk(currentStats, maxStats),
         nationalCaps: 0,
+        careerSeed: s.careerSeed || makeCareerSeed(),
       };
       sfxSuccess();
       return {
@@ -689,11 +862,16 @@ export function GameSimulationProvider({
         maxStats,
         ...syncStats(currentStats),
         career,
+        careerSeed: career.careerSeed,
         phase: "career",
         pendingEvent: null,
         pendingNational: null,
+        nationalGamesQueue: [],
+        nationalWins: 0,
+        fullGame: null,
+        identityDone: false,
         awaitingOffseason: false,
-        centerView: "journey",
+        centerView: "identity",
         seasonQueue: [],
         keyGamesQueue: [],
         pendingFinals: null,
@@ -1000,6 +1178,19 @@ export function GameSimulationProvider({
   const watchFinals = useCallback(() => {
     setState((s) => {
       if (!s.pendingFinals) return s;
+      if (!s.pendingDream && Math.random() < 0.4) {
+        const good = Math.random() < 0.55;
+        return {
+          ...s,
+          pendingDream: {
+            kind: good ? "dream" : "nightmare",
+            titleKey: good ? "dream.title" : "nightmare.title",
+            bodyKey: good ? "dream.body" : "nightmare.body",
+            clutchMod: good ? 0.06 : -0.06,
+          },
+          centerView: "dream",
+        };
+      }
       return {
         ...s,
         clutch: createClutchState(s.pendingFinals),
@@ -1062,6 +1253,7 @@ export function GameSimulationProvider({
             career: career!,
             clutch: null,
             clutchKind: null,
+            fullGame: null,
             effectToasts: [
               {
                 id: uid("toast"),
@@ -1072,6 +1264,33 @@ export function GameSimulationProvider({
           },
           pendingSimRef,
         );
+      }
+      if (s.clutchKind === "national") {
+        const won = !!s.clutch.winsGame;
+        if (won) sfxSuccess();
+        const wins = (s.nationalWins ?? 0) + (won ? 1 : 0);
+        const nextState = {
+          ...s,
+          nationalWins: wins,
+          clutch: null,
+          clutchKind: null,
+          fullGame: null,
+          effectToasts: [
+            {
+              id: uid("toast"),
+              tone: won ? ("good" as const) : ("bad" as const),
+              labelKey: won ? "impact.nationalWin" : "impact.nationalLose",
+            },
+          ],
+        };
+        const cont = continueNationalQueue(nextState);
+        if (cont) return cont;
+        const kind =
+          s.clutch.finals.competition === "olympics" ||
+          s.clutch.finals.competition === "world_cup"
+            ? s.clutch.finals.competition
+            : null;
+        return finishNationalSlate(nextState, s.career!, kind);
       }
       if (s.clutch.winsGame) sfxSuccess();
       return finishFinalsFlow(s, s.clutch.winsGame, true);
@@ -1086,34 +1305,40 @@ export function GameSimulationProvider({
         let career = { ...s.career };
         const toasts: GameState["effectToasts"] = [];
         if (choice === "accept") {
+          const o = computeOverall(liveStats(s), s.player.posId);
+          const games = buildNationalGames(call, o);
           career = {
             ...career,
             nationalCaps: (career.nationalCaps ?? 0) + 1,
-            fatigue: clamp((career.fatigue ?? 0) + 8, 0, 100),
+            fatigue: clamp(
+              (career.fatigue ?? 0) +
+                (call.role === "star" ? 14 : call.role === "rotation" ? 10 : 6),
+              0,
+              100,
+            ),
             marketBoost: (career.marketBoost ?? 0) + 1,
-            trophies: {
-              ...career.trophies,
-              worldCups:
-                call.kind === "world_cup"
-                  ? career.trophies.worldCups + 1
-                  : career.trophies.worldCups,
-              olympicRuns:
-                call.kind === "olympics"
-                  ? (career.trophies.olympicRuns ?? 0) + 1
-                  : (career.trophies.olympicRuns ?? 0),
-            },
             press: [
               {
                 id: uid("press"),
                 season: career.season,
                 age: career.age,
                 headline: t(s.locale, call.titleKey, { year: call.year }),
-                body: t(s.locale, call.bodyKey, { year: call.year }),
+                body: t(s.locale, "national.pressBody", {
+                  year: call.year,
+                  min: call.expectedMinutes ?? 10,
+                  role: t(
+                    s.locale,
+                    call.role === "star"
+                      ? "national.role.star"
+                      : call.role === "rotation"
+                        ? "national.role.rotation"
+                        : "national.role.fringe",
+                  ),
+                }),
               },
               ...career.press,
             ],
           };
-          // Soft permanent instinct bump for showing up
           const stats = completeStats(liveStats(s));
           stats.clu = clamp(stats.clu + 1, 40, 99);
           toasts.push({
@@ -1122,15 +1347,18 @@ export function GameSimulationProvider({
             labelKey: "impact.nationalYes",
           });
           sfxSuccess();
-          return openOffseason(
-            {
-              ...s,
-              ...syncStats(stats),
-              pendingNational: null,
-              effectToasts: toasts,
-            },
+          const base = {
+            ...s,
+            ...syncStats(stats),
             career,
-          );
+            pendingNational: null,
+            nationalGamesQueue: games,
+            nationalWins: 0,
+            effectToasts: toasts,
+            awaitingOffseason: true,
+          };
+          const first = continueNationalQueue(base);
+          return first ?? openOffseason(base, career);
         }
         toasts.push({
           id: uid("toast"),
@@ -1142,13 +1370,351 @@ export function GameSimulationProvider({
           fatigue: Math.max(0, (career.fatigue ?? 0) - 5),
         };
         return openOffseason(
-          { ...s, pendingNational: null, effectToasts: toasts },
+          {
+            ...s,
+            pendingNational: null,
+            nationalGamesQueue: [],
+            effectToasts: toasts,
+          },
           career,
         );
       });
     },
     [],
   );
+
+  const resolveFullOff = useCallback((action: FullOffCall) => {
+    setState((s) => {
+      if (!s.fullGame || s.fullGame.resolved) return s;
+      return {
+        ...s,
+        fullGame: resolveFullOffense(
+          s.fullGame,
+          action,
+          liveStats(s),
+          s.career?.signature,
+        ),
+      };
+    });
+  }, []);
+
+  const resolveFullDef = useCallback((action: FullDefCall) => {
+    setState((s) => {
+      if (!s.fullGame || s.fullGame.resolved) return s;
+      return {
+        ...s,
+        fullGame: resolveFullDefense(s.fullGame, action, liveStats(s)),
+      };
+    });
+  }, []);
+
+  const nextFullQuarter = useCallback(() => {
+    setState((s) => {
+      if (!s.fullGame || s.fullGame.phase !== "quarter_break") return s;
+      return { ...s, fullGame: advanceFullQuarter(s.fullGame) };
+    });
+  }, []);
+
+  const finishFullGame = useCallback(() => {
+    setState((s) => {
+      if (!s.fullGame?.resolved || s.fullGame.winsGame === null || !s.career) {
+        return s;
+      }
+      const won = s.fullGame.winsGame;
+      const comp = s.fullGame.finals.competition;
+      if (won) sfxSuccess();
+
+      if (comp === "key_game") {
+        const mods = { ...(s.career.seasonMods ?? emptySeasonMods()) };
+        if (won) {
+          mods.chemistry = (mods.chemistry ?? 0) + 2;
+          mods.energy = (mods.energy ?? 0) + 3;
+          mods.clu = (mods.clu ?? 0) + 2;
+        } else {
+          mods.energy = (mods.energy ?? 0) - 2;
+        }
+        return continueSeasonQueue(
+          {
+            ...s,
+            career: { ...s.career, seasonMods: mods },
+            fullGame: null,
+            clutch: null,
+            clutchKind: null,
+            effectToasts: [
+              {
+                id: uid("toast"),
+                tone: won ? "good" : "bad",
+                labelKey: won ? "impact.fullWin" : "impact.fullLose",
+              },
+            ],
+          },
+          pendingSimRef,
+        );
+      }
+
+      if (comp === "olympics" || comp === "world_cup") {
+        const wins = (s.nationalWins ?? 0) + (won ? 1 : 0);
+        const nextState = {
+          ...s,
+          nationalWins: wins,
+          fullGame: null,
+          clutch: null,
+          clutchKind: null,
+          effectToasts: [
+            {
+              id: uid("toast"),
+              tone: won ? ("good" as const) : ("bad" as const),
+              labelKey: won ? "impact.nationalWin" : "impact.nationalLose",
+            },
+          ],
+        };
+        const cont = continueNationalQueue(nextState);
+        if (cont) return cont;
+        return finishNationalSlate(nextState, s.career, comp);
+      }
+
+      return finishFinalsFlow(
+        { ...s, fullGame: null, clutch: null },
+        won,
+        true,
+      );
+    });
+  }, [finishFinalsFlow]);
+
+  const confirmIdentity = useCallback(
+    (input: {
+      nickname: string;
+      signature: SignatureMove;
+      drip: DripStyle;
+      coachStyle: CoachStyle;
+      preferNcaa: boolean;
+    }) => {
+      setState((s) => applyIdentity(s, input));
+    },
+    [],
+  );
+
+  const simulateEntireCareer = useCallback(() => {
+    setState((s) => {
+      if (!s.career) return s;
+      sfxSuccess();
+      return runSimulateCareer(s);
+    });
+  }, []);
+
+  const startQuickCrunch = useCallback(() => {
+    setState((s) => startQuickCrunchState(s));
+  }, []);
+
+  const openDailyChallenge = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      dailyChallenge: {
+        dateKey: new Date().toISOString().slice(0, 10),
+        seed: todayChallengeSeed(),
+        kind: "crunch",
+        bestScore: null,
+      },
+      centerView: "daily_posse",
+    }));
+  }, []);
+
+  const resolvePressChoice = useCallback((optionId: string) => {
+    setState((s) => applyPressChoice(s, optionId));
+  }, []);
+
+  const resolveDream = useCallback(() => {
+    setState((s) => {
+      if (!s.pendingDream || !s.career) return s;
+      return {
+        ...s,
+        career: {
+          ...s.career,
+          clutchMod: (s.career.clutchMod ?? 0) + s.pendingDream.clutchMod,
+        },
+        pendingDream: null,
+        centerView: s.pendingFinals ? "finals_prompt" : "season",
+        effectToasts: [
+          {
+            id: uid("toast"),
+            tone: s.pendingDream.clutchMod >= 0 ? "good" : "warn",
+            labelKey:
+              s.pendingDream.kind === "dream"
+                ? "impact.dream"
+                : "impact.nightmare",
+          },
+        ],
+      };
+    });
+  }, []);
+
+  const finishStreet3x3 = useCallback((play: boolean) => {
+    setState((s) => {
+      if (!s.career) return s;
+      if (!play) {
+        return { ...s, centerView: "season" };
+      }
+      const hit = Math.random() < 0.55;
+      const injured = Math.random() < (s.career.injuryRisk ?? 0.15);
+      let career = {
+        ...s.career,
+        marketBoost: (s.career.marketBoost ?? 0) + (hit ? 2 : 0),
+        museum: [
+          ...s.career.museum,
+          museumUnlock("clip", "museum.streetClip", s.career.season),
+        ],
+      };
+      if (injured) {
+        career = {
+          ...career,
+          pendingGamesMissed: (career.pendingGamesMissed ?? 0) + 3,
+        };
+      }
+      const stats = completeStats(liveStats(s));
+      if (hit) stats.ath = clamp(stats.ath + 1, 40, 99);
+      return {
+        ...s,
+        ...syncStats(stats),
+        career,
+        centerView: "season",
+        effectToasts: [
+          {
+            id: uid("toast"),
+            tone: injured ? "bad" : hit ? "good" : "warn",
+            labelKey: injured
+              ? "impact.streetHurt"
+              : hit
+                ? "impact.streetWin"
+                : "impact.streetLose",
+          },
+        ],
+      };
+    });
+  }, []);
+
+  const finishAllStar = useCallback(() => {
+    setState((s) => {
+      if (!s.career) return s;
+      return {
+        ...s,
+        career: {
+          ...s.career,
+          allStarCount: (s.career.allStarCount ?? 0) + 1,
+          trophies: {
+            ...s.career.trophies,
+            allStars: s.career.trophies.allStars + 1,
+          },
+          museum: [
+            ...s.career.museum,
+            museumUnlock("jersey", "museum.allstarJersey", s.career.season),
+          ],
+        },
+        centerView: "season",
+        effectToasts: [
+          {
+            id: uid("toast"),
+            tone: "good",
+            labelKey: "impact.allstar",
+          },
+        ],
+      };
+    });
+  }, []);
+
+  const resolveContractTalk = useCallback(
+    (choice: "stay" | "trade" | "renegotiate") => {
+      setState((s) => {
+        if (!s.career) return s;
+        let career = { ...s.career };
+        if (choice === "renegotiate") {
+          career = {
+            ...career,
+            annualSalary: Math.round((career.annualSalary ?? 0) * 1.12),
+            contractYearsRemaining: Math.max(
+              2,
+              career.contractYearsRemaining ?? 1,
+            ),
+          };
+        } else if (choice === "trade") {
+          return {
+            ...s,
+            career: {
+              ...career,
+              marketBoost: (career.marketBoost ?? 0) + 2,
+              seasonMods: {
+                ...(career.seasonMods ?? emptySeasonMods()),
+                chemistry: (career.seasonMods?.chemistry ?? 0) - 2,
+              },
+            },
+            centerView: "transfers",
+            effectToasts: [
+              {
+                id: uid("toast"),
+                tone: "warn",
+                labelKey: "impact.tradeRequest",
+              },
+            ],
+          };
+        }
+        return {
+          ...s,
+          career,
+          centerView: "season",
+          effectToasts: [
+            {
+              id: uid("toast"),
+              tone: "good",
+              labelKey:
+                choice === "renegotiate"
+                  ? "impact.renegotiate"
+                  : "impact.stayLoyal",
+            },
+          ],
+        };
+      });
+    },
+    [],
+  );
+
+  const copyClipMoment = useCallback(async () => {
+    const s = stateRef.current;
+    const text = s.career
+      ? `${s.player?.name ?? "Player"} (${s.career.nickname ?? ""}) · OVR ${computeOverall(liveStats(s), s.player?.posId ?? null)} · ${s.career.clubName} · ${s.career.calendarYear}`
+      : "Lenda da Quadra";
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const setCareerSeed = useCallback((seed: string) => {
+    setState((s) => ({
+      ...s,
+      careerSeed: normalizeSeed(seed),
+      career: s.career
+        ? { ...s.career, careerSeed: normalizeSeed(seed) }
+        : s.career,
+    }));
+  }, []);
+
+  const toggleLiveVote = useCallback(() => {
+    setState((s) => {
+      if (!s.career) return s;
+      return {
+        ...s,
+        career: {
+          ...s.career,
+          liveVoteEnabled: !s.career.liveVoteEnabled,
+        },
+      };
+    });
+  }, []);
+
+  const dismissHubTour = useCallback(() => {
+    setState((s) => ({ ...s, hubTourDone: true }));
+  }, []);
 
   const dismissAward = useCallback(() => {
     setState((s) => {
@@ -1234,6 +1800,7 @@ export function GameSimulationProvider({
         clubName: r.teamName,
         age: s.career.age + 1,
         season: s.career.season + 1,
+        calendarYear: (s.career.calendarYear ?? START_YEAR) + 1,
         offers: [],
         nbaSeasons: 0,
         seasonMods: emptySeasonMods(),
@@ -1449,6 +2016,23 @@ export function GameSimulationProvider({
       resolveCrunchOffense,
       resolveCrunchDefense,
       finishClutch,
+      resolveFullOff,
+      resolveFullDef,
+      nextFullQuarter,
+      finishFullGame,
+      confirmIdentity,
+      simulateEntireCareer,
+      startQuickCrunch,
+      openDailyChallenge,
+      resolvePressChoice,
+      resolveDream,
+      finishStreet3x3,
+      finishAllStar,
+      resolveContractTalk,
+      copyClipMoment,
+      setCareerSeed,
+      toggleLiveVote,
+      dismissHubTour,
       dismissAward,
       resolveSeasonEvent,
       tr,
@@ -1481,6 +2065,23 @@ export function GameSimulationProvider({
       resolveCrunchOffense,
       resolveCrunchDefense,
       finishClutch,
+      resolveFullOff,
+      resolveFullDef,
+      nextFullQuarter,
+      finishFullGame,
+      confirmIdentity,
+      simulateEntireCareer,
+      startQuickCrunch,
+      openDailyChallenge,
+      resolvePressChoice,
+      resolveDream,
+      finishStreet3x3,
+      finishAllStar,
+      resolveContractTalk,
+      copyClipMoment,
+      setCareerSeed,
+      toggleLiveVote,
+      dismissHubTour,
       dismissAward,
       resolveSeasonEvent,
       tr,

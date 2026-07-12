@@ -45,11 +45,27 @@ export function SeasonResult() {
     setCenterView,
     declareNbaDraft,
     retire,
+    simulateEntireCareer,
+    openDailyChallenge,
+    dismissHubTour,
     tr,
   } = useGameActions();
   const career = state.career;
   const s = career?.lastSeason;
   if (!career || !s) return null;
+
+  const showTour = !state.hubTourDone;
+  const hist = career.ovrHistory;
+  const prevOvr =
+    hist.length >= 2 ? hist[hist.length - 2]!.ovr : hist[0]?.ovr;
+  const lastOvr = hist.length >= 1 ? hist[hist.length - 1]!.ovr : ovr;
+  const ovrDelta =
+    prevOvr !== undefined ? lastOvr - prevOvr : undefined;
+
+  const openHub = (view: Parameters<typeof setCenterView>[0]) => {
+    if (showTour) dismissHubTour();
+    setCenterView(view);
+  };
 
   const draftNear =
     !career.inNba &&
@@ -102,6 +118,18 @@ export function SeasonResult() {
               </span>
             ))}
           </div>
+        )}
+        {ovrDelta !== undefined && (
+          <p className="mt-2 font-sans text-[11px] text-white/50">
+            {tr("compare.title")}:{" "}
+            <span
+              className={
+                ovrDelta >= 0 ? "text-emerald-400" : "text-red-400"
+              }
+            >
+              {prevOvr} → {lastOvr} ({ovrDelta >= 0 ? `+${ovrDelta}` : ovrDelta})
+            </span>
+          </p>
         )}
       </div>
 
@@ -164,6 +192,67 @@ export function SeasonResult() {
             {tr("cta.retire")}
           </Button>
         )}
+      </div>
+
+      {showTour && (
+        <div className="w-full rounded-xl border border-arena-accent/40 bg-arena-accent/10 px-3 py-2.5 text-left">
+          <p className="font-display text-sm uppercase text-arena-accent">
+            {tr("hub.tour.title")}
+          </p>
+          <p className="mt-1 font-sans text-[11px] text-white/60">
+            {tr("hub.tour.body")}
+          </p>
+          <Button
+            variant="outline"
+            className="mt-2 w-full justify-center"
+            onClick={dismissHubTour}
+          >
+            {tr("hub.tour.cta")}
+          </Button>
+        </div>
+      )}
+
+      <p className="font-sans text-[10px] text-white/40">{tr("season.hubHint")}</p>
+      <div
+        className={`flex flex-wrap justify-center gap-1.5 ${
+          showTour ? "rounded-xl ring-2 ring-arena-accent/50 p-2" : ""
+        }`}
+      >
+        <Button variant="outline" onClick={() => openHub("timeline")}>
+          {tr("hub.timeline")}
+        </Button>
+        <Button variant="outline" onClick={() => openHub("museum")}>
+          {tr("hub.museum")}
+        </Button>
+        <Button variant="outline" onClick={() => openHub("street3x3")}>
+          {tr("hub.street")}
+        </Button>
+        {ovr >= 72 && (
+          <Button variant="outline" onClick={() => openHub("allstar")}>
+            {tr("hub.allstar")}
+          </Button>
+        )}
+        <Button variant="outline" onClick={() => openHub("contract_talk")}>
+          {tr("hub.contract")}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            if (showTour) dismissHubTour();
+            openDailyChallenge();
+          }}
+        >
+          {tr("hub.daily")}
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            if (showTour) dismissHubTour();
+            simulateEntireCareer();
+          }}
+        >
+          {tr("simCareer.cta")}
+        </Button>
       </div>
 
       <InlinePress />

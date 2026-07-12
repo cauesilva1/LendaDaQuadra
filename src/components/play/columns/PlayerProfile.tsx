@@ -12,6 +12,7 @@ import {
 } from "@/lib/data";
 import { completeStats } from "@/lib/progression";
 import { injuryTier, streetRiskPct } from "@/lib/injury";
+import { careerStageKey } from "@/lib/calendar";
 import { getLeague, liveStats } from "@/lib/simulation";
 import { formatMoney } from "@/lib/utils";
 import { useGameActions, useGameState } from "@/hooks/useGameSimulation";
@@ -34,6 +35,7 @@ export function PlayerProfile() {
   const career = state.career;
   const player = state.player;
   const flash = state.statFlash;
+  const seed = career?.careerSeed || state.careerSeed || "";
 
   useEffect(() => {
     if (!flash) return;
@@ -48,6 +50,15 @@ export function PlayerProfile() {
   const current = completeStats(liveStats(state));
   const max = completeStats(state.maxStats);
 
+  const copySeed = async () => {
+    if (!seed) return;
+    try {
+      await navigator.clipboard.writeText(seed);
+    } catch {
+      /* ignore */
+    }
+  };
+
   return (
     <aside className="flex flex-col gap-2">
       <div className="shrink-0 rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-arena-panel p-3">
@@ -61,9 +72,24 @@ export function PlayerProfile() {
           <div className="min-w-0">
             <h2 className="truncate font-display text-lg uppercase leading-none text-white">
               {player.name}
+              {career.nickname ? (
+                <span className="font-sans text-sm font-normal normal-case text-arena-accent/80">
+                  {" "}
+                  “{career.nickname}”
+                </span>
+              ) : null}
             </h2>
             <p className="mt-0.5 font-sans text-[11px] text-white/50">
               {player.posId} · {career.clubName}
+            </p>
+            <p className="font-sans text-[10px] font-medium uppercase tracking-wider text-arena-accent/80">
+              {tr(
+                careerStageKey(
+                  career.seasonsPlayed,
+                  ovr,
+                  career.inNba,
+                ),
+              )}
             </p>
             <p className="font-display text-sm text-arena-accent">
               OVR {ovr} · {career.age} {tr("dash.age")}
@@ -145,6 +171,23 @@ export function PlayerProfile() {
             <span className="text-white/70">{career.rivalClubName}</span>
           </p>
         )}
+        <div className="mt-1.5 flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-arena-bg/40 px-2 py-1.5">
+          <div className="min-w-0">
+            <p className="font-sans text-[9px] font-medium uppercase tracking-wider text-white/40">
+              {tr("dash.seed")}
+            </p>
+            <p className="truncate font-mono text-[11px] text-white/70">
+              {seed || "—"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void copySeed()}
+            className="shrink-0 cursor-pointer rounded border border-white/15 px-2 py-1 font-sans text-[9px] uppercase text-white/50 hover:border-arena-accent hover:text-arena-accent"
+          >
+            {tr("dash.seedCopy")}
+          </button>
+        </div>
         <div className="mt-1.5 rounded-lg border border-white/10 bg-arena-bg/40 px-2 py-1.5">
           <p className="font-sans text-[9px] font-medium uppercase tracking-wider text-white/40">
             {tr("dash.injury")}

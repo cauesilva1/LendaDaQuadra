@@ -5,6 +5,21 @@ import {
 } from "@/lib/data";
 import type { GameState } from "@/types/game";
 
+const SAFE_HUB_VIEWS = new Set([
+  "journey",
+  "identity",
+  "timeline",
+  "museum",
+  "spectator",
+  "street3x3",
+  "allstar",
+  "contract_talk",
+  "daily_posse",
+  "season",
+  "transfers",
+  "press",
+]);
+
 /**
  * Normalize interrupted / desynced saves before the player can interact.
  * Webgame rule: refresh mid-animation must never soft-lock the career.
@@ -16,6 +31,16 @@ export function recoverHydratedState(state: GameState): GameState {
     statFlash: null,
     effectToasts: [],
     draftAnimating: false,
+    careerSeed: state.careerSeed || state.career?.careerSeed || "",
+    pendingPressChoice: state.pendingPressChoice ?? null,
+    pendingDream: state.pendingDream ?? null,
+    spectatorDoc: state.spectatorDoc ?? [],
+    dailyChallenge: state.dailyChallenge ?? null,
+    identityDone: state.identityDone ?? !!state.career?.nickname,
+    hubTourDone: state.hubTourDone ?? false,
+    nationalGamesQueue: state.nationalGamesQueue ?? [],
+    nationalWins: state.nationalWins ?? 0,
+    fullGame: state.fullGame ?? null,
   };
 
   // In-flight "Simulando…" never survives a refresh (timer is in-memory only)
@@ -30,6 +55,7 @@ export function recoverHydratedState(state: GameState): GameState {
       keyGamesQueue: [],
       clutch: null,
       clutchKind: null,
+      fullGame: null,
     };
   }
 
@@ -42,23 +68,64 @@ export function recoverHydratedState(state: GameState): GameState {
     };
   }
 
-  // Mid-season in progress (queue / clutch / mid dilemma) — keep it
+  // Press / dream / daily without payload
+  if (next.centerView === "press_choice" && !next.pendingPressChoice) {
+    next = {
+      ...next,
+      centerView: next.career?.lastSeason ? "season" : "journey",
+    };
+  }
+  if (next.centerView === "dream" && !next.pendingDream) {
+    next = {
+      ...next,
+      centerView: next.pendingFinals ? "finals_prompt" : "season",
+    };
+  }
+  if (next.centerView === "quick_crunch" && !next.clutch) {
+    next = {
+      ...next,
+      centerView: next.career?.lastSeason ? "season" : "journey",
+    };
+  }
+
+  // Mid-season in progress — keep it
   const midSeasonLive =
     (next.seasonQueue?.length ?? 0) > 0 ||
     (next.keyGamesQueue?.length ?? 0) > 0 ||
+    (next.nationalGamesQueue?.length ?? 0) > 0 ||
     !!next.clutch ||
+    !!next.fullGame ||
     next.centerView === "mid_event" ||
     next.centerView === "clutch" ||
+    next.centerView === "quick_crunch" ||
     next.centerView === "simulating" ||
+    next.centerView === "full_game" ||
     next.centerView === "national_callup";
 
-  // Career started but season never launched → destination card
+  // Identity not finished yet
   if (
     next.career &&
+    !next.identityDone &&
+    !next.career.nickname &&
+    (next.phase === "career" || next.phase === "transfers")
+  ) {
+    next = {
+      ...next,
+      phase: "career",
+      centerView: "identity",
+      pendingEvent: null,
+      awaitingOffseason: false,
+    };
+  }
+
+  // Career started but season never launched → destination (not identity)
+  if (
+    next.career &&
+    next.identityDone &&
     !next.career.lastSeason &&
     !midSeasonLive &&
     (next.phase === "career" || next.phase === "transfers") &&
-    next.centerView !== "journey"
+    !SAFE_HUB_VIEWS.has(next.centerView)
   ) {
     next = {
       ...next,
@@ -69,7 +136,7 @@ export function recoverHydratedState(state: GameState): GameState {
     };
   }
 
-  // NBA Draft interrupted mid-suspense → resume animation (finishNbaDraft resolves pick)
+  // NBA Draft interrupted mid-suspense → resume animation
   const onDraft =
     next.phase === "nba_draft" || next.centerView === "nba_draft";
   if (onDraft) {
@@ -97,7 +164,7 @@ export function recoverHydratedState(state: GameState): GameState {
     }
   }
 
-  // Crunch Time interrupted → force clutch view, clear orphan clutch
+  // Crunch Time interrupted
   if (next.clutch) {
     const valid =
       typeof next.clutch.clock === "number" &&
@@ -116,7 +183,8 @@ export function recoverHydratedState(state: GameState): GameState {
       next = {
         ...next,
         phase: next.phase === "legacy" ? next.phase : "career",
-        centerView: "clutch",
+        centerView:
+          next.centerView === "quick_crunch" ? "quick_crunch" : "clutch",
       };
     }
   } else if (next.centerView === "clutch") {
@@ -160,6 +228,44 @@ export function recoverHydratedState(state: GameState): GameState {
     };
   }
 
+  // Full game interrupted
+  if (next.fullGame) {
+    const valid =
+      typeof next.fullGame.clock === "number" &&
+      (next.fullGame.phase === "playing" ||
+        next.fullGame.phase === "quarter_break" ||
+        next.fullGame.phase === "result");
+    if (!valid) {
+      next = {
+        ...next,
+        fullGame: null,
+        centerView: next.career?.lastSeason ? "season" : "journey",
+      };
+    } else {
+      next = {
+        ...next,
+        phase: next.phase === "legacy" ? next.phase : "career",
+        centerView: "full_game",
+      };
+    }
+  } else if (next.centerView === "full_game") {
+    next = {
+      ...next,
+      centerView: next.career?.lastSeason ? "season" : "journey",
+    };
+  }
+
+  // Spectator without doc → season / legacy
+  if (
+    next.centerView === "spectator" &&
+    (next.spectatorDoc?.length ?? 0) === 0
+  ) {
+    next = {
+      ...next,
+      centerView: next.phase === "legacy" ? "idle" : "season",
+    };
+  }
+
   return next;
 }
 
@@ -188,9 +294,8 @@ export function scoutBarProgress(
 
   let pct: number;
   if (ovr <= 55) pct = 0;
-  else if (ovr <= 72) pct = Math.round(((ovr - 55) / (72 - 55)) * 50);
-  else if (!ovrOk) {
-    pct = Math.round(50 + ((ovr - 72) / (draftOvr - 72)) * 40);
+  else if (ovr < draftOvr) {
+    pct = Math.round(((ovr - 55) / Math.max(1, draftOvr - 55)) * 85);
   } else if (!ready) {
     pct = 90;
   } else {

@@ -3,6 +3,7 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import { ClipButton } from "@/components/play/events/FeaturePanels";
 import { useGameActions, useGameState } from "@/hooks/useGameSimulation";
 import { springPremium } from "@/lib/motion";
 import { sfxBuzzer, sfxSwish } from "@/lib/sfx";
@@ -364,6 +365,9 @@ function ClutchMomentInner() {
           <Button className="mt-3 w-full justify-center" onClick={finishClutch}>
             {tr("clutch.continue")}
           </Button>
+          <div className="mt-2 flex justify-center">
+            <ClipButton />
+          </div>
         </div>
       )}
     </div>

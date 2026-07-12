@@ -1,8 +1,9 @@
 import { createClutchState } from "@/lib/clutch";
+import { createFullGame } from "@/lib/fullGame";
 import { pickMidEvent } from "@/lib/progression";
 import { simulateSeason } from "@/lib/simulation";
 import { uid } from "@/lib/utils";
-import type { GameState, SeasonBeat } from "@/types/game";
+import type { FinalsContext, GameState, SeasonBeat } from "@/types/game";
 
 export function buildSeasonQueue(inNba: boolean): SeasonBeat[] {
   if (inNba) {
@@ -18,6 +19,40 @@ type SimPayload = {
   flash: GameState["statFlash"];
   toasts: GameState["effectToasts"];
 };
+
+function launchPlayableGame(
+  s: GameState,
+  game: FinalsContext,
+  queue: SeasonBeat[],
+  keyGames: FinalsContext[],
+  kind: "key_game" | "national",
+): GameState {
+  const mode = game.playMode ?? (kind === "key_game" && keyGames.length === 2 ? "full" : "clutch");
+  if (mode === "full") {
+    return {
+      ...s,
+      seasonQueue: queue,
+      keyGamesQueue: keyGames,
+      pendingEvent: null,
+      clutch: null,
+      clutchKind: null,
+      fullGame: createFullGame(game, game.nationalRole),
+      centerView: "full_game",
+      pendingFinals: null,
+    };
+  }
+  return {
+    ...s,
+    seasonQueue: queue,
+    keyGamesQueue: keyGames,
+    pendingEvent: null,
+    clutch: createClutchState(game),
+    clutchKind: kind,
+    fullGame: null,
+    centerView: "clutch",
+    pendingFinals: null,
+  };
+}
 
 /** Advance the in-season beat queue (key games → mid → simulate). */
 export function continueSeasonQueue(
@@ -35,16 +70,7 @@ export function continueSeasonQueue(
       const game = keyGames[0];
       keyGames = keyGames.slice(1);
       if (!game) continue;
-      return {
-        ...s,
-        seasonQueue: queue,
-        keyGamesQueue: keyGames,
-        pendingEvent: null,
-        clutch: createClutchState(game),
-        clutchKind: "key_game",
-        centerView: "clutch",
-        pendingFinals: null,
-      };
+      return launchPlayableGame(s, game, queue, keyGames, "key_game");
     }
 
     if (beat === "mid") {
@@ -56,6 +82,7 @@ export function continueSeasonQueue(
         centerView: "mid_event",
         clutch: null,
         clutchKind: null,
+        fullGame: null,
       };
     }
 
@@ -67,6 +94,7 @@ export function continueSeasonQueue(
           keyGamesQueue: keyGames,
           clutch: null,
           clutchKind: null,
+          fullGame: null,
           pendingEvent: null,
         },
         pendingSimRef,
@@ -81,10 +109,40 @@ export function continueSeasonQueue(
       keyGamesQueue: [],
       clutch: null,
       clutchKind: null,
+      fullGame: null,
       pendingEvent: null,
     },
     pendingSimRef,
   );
+}
+
+/** Continue national-team slate after a game; then offseason via caller. */
+export function continueNationalQueue(s: GameState): GameState | null {
+  const queue = [...(s.nationalGamesQueue ?? [])];
+  if (queue.length === 0) return null;
+  const game = queue.shift()!;
+  if ((game.playMode ?? "clutch") === "full") {
+    return {
+      ...s,
+      nationalGamesQueue: queue,
+      pendingNational: null,
+      pendingEvent: null,
+      clutch: null,
+      clutchKind: null,
+      fullGame: createFullGame(game, game.nationalRole),
+      centerView: "full_game",
+    };
+  }
+  return {
+    ...s,
+    nationalGamesQueue: queue,
+    pendingNational: null,
+    pendingEvent: null,
+    clutch: createClutchState(game),
+    clutchKind: "national",
+    fullGame: null,
+    centerView: "clutch",
+  };
 }
 
 export function enqueueSimulation(
@@ -116,6 +174,7 @@ export function enqueueSimulation(
     awaitingOffseason: true,
     clutch: null,
     clutchKind: null,
+    fullGame: null,
   };
   pendingSimRef.current = {
     base,

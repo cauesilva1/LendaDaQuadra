@@ -10,6 +10,9 @@ import { ClutchMoment } from "@/components/play/events/ClutchMoment";
 import { FinalsPrompt } from "@/components/play/events/FinalsPrompt";
 import { JourneyKickoff } from "@/components/play/events/JourneyKickoff";
 import { NationalCallupPanel } from "@/components/play/events/NationalCallupPanel";
+import { FullGamePanel } from "@/components/play/events/FullGamePanel";
+import { IdentityPanel } from "@/components/play/events/IdentityPanel";
+import { FeaturePanels } from "@/components/play/events/FeaturePanels";
 import { NbaDraftNight } from "@/components/play/events/NbaDraftNight";
 import { SeasonResult } from "@/components/play/events/SeasonResult";
 import { SeasonEventPanel } from "@/components/play/events/SeasonEventPanel";
@@ -60,7 +63,19 @@ export function Dashboard() {
     state.centerView === "offseason_event" ||
     state.centerView === "simulating" ||
     state.centerView === "journey" ||
-    state.centerView === "national_callup";
+    state.centerView === "national_callup" ||
+    state.centerView === "full_game" ||
+    state.centerView === "identity" ||
+    state.centerView === "timeline" ||
+    state.centerView === "museum" ||
+    state.centerView === "spectator" ||
+    state.centerView === "press_choice" ||
+    state.centerView === "dream" ||
+    state.centerView === "street3x3" ||
+    state.centerView === "allstar" ||
+    state.centerView === "contract_talk" ||
+    state.centerView === "daily_posse" ||
+    state.centerView === "quick_crunch";
 
   useEffect(() => {
     if (isModalEvent) setMobileTab("court");
@@ -77,6 +92,24 @@ export function Dashboard() {
     center = <JourneyKickoff />;
   } else if (state.centerView === "national_callup") {
     center = <NationalCallupPanel />;
+  } else if (state.centerView === "identity") {
+    center = <IdentityPanel />;
+  } else if (state.centerView === "full_game") {
+    center = <FullGamePanel />;
+  } else if (state.centerView === "quick_crunch") {
+    center = <ClutchMoment />;
+  } else if (
+    state.centerView === "timeline" ||
+    state.centerView === "museum" ||
+    state.centerView === "spectator" ||
+    state.centerView === "press_choice" ||
+    state.centerView === "dream" ||
+    state.centerView === "street3x3" ||
+    state.centerView === "allstar" ||
+    state.centerView === "contract_talk" ||
+    state.centerView === "daily_posse"
+  ) {
+    center = <FeaturePanels />;
   } else if (state.centerView === "simulating") {
     center = <SeasonSimulating />;
   } else if (

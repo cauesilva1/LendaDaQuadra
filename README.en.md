@@ -2,22 +2,23 @@
 
 [Português](README.md) · **English** · [Español](README.es.md)
 
-A browser basketball career simulator. Steal attributes from NBA legends in the draft, grow in your home league, and fight your way to EuroLeague and the NBA — with weighty decisions and playable crunch moments.
+Browser basketball career sim. Steal NBA legend attributes, build an identity (nickname / signature move), play on-court moments, and chase Euro + NBA.
 
 **Play:** [/play](https://github.com/cauesilva1/LendaDaQuadra) · locales: PT / EN / ES
 
 ---
 
-## What you do
+## Flow
 
-1. **Attribute draft** — pick legend stats (your career ceiling)
-2. **How-to** — short pre-draft card explaining the loop
-3. **Season** — 3 playable key games (Crunch Time style) + dilemma + quick sim
-4. **Off-season** — train, clinic, or streetball (injury risk tied to draft ATH)
-5. **National team** — World Cup and Olympics call-ups
-6. **Goal** — national team → Euro → NBA, starting at **age 16 in 2016**
+1. **Setup** — name, country, position, mode, optional **seed** (shared seed = shared career for stream/friends)
+2. **How-to** — what matters in the career
+3. **Draft** — steal your attribute ceiling from legends
+4. **Identity** — nickname, signature move, drip, coach style
+5. **Season** — 1 full game (**you run the 2nd half**) + crunch games + dilemma + sim
+6. **Hub** — museum, timeline, 3x3, All-Star, contract, daily challenge, **simulate entire career**
+7. **National team** — World Cup / Olympics with a visual bracket and minutes by OVR
 
-Progression, standings, and the scout bar are tuned so you are not stuck at low OVR or eternally last in the table.
+You start at **age 16 in 2016**. Save key: `lenda-da-quadra-v9` (**new career** recommended if migrating from older saves).
 
 ---
 
@@ -25,7 +26,7 @@ Progression, standings, and the scout bar are tuned so you are not stuck at low 
 
 - **Next.js** (App Router) · **React** · **TypeScript**
 - **Tailwind CSS** · **Framer Motion** · **Lucide**
-- Persistence via `localStorage` (save key `lenda-da-quadra-v7`)
+- Persistence via `localStorage`
 
 ---
 
@@ -39,22 +40,23 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000). Career: `/play` (or `/en/play`, `/es`).
 
 ```bash
-npm run build   # production build
-npm start       # serve the build
+npm run build
+npm start
+npx tsx scripts/smoke-stability.ts
 ```
 
 ---
 
-## Structure (overview)
+## Structure
 
 | Area | Where |
 |------|--------|
-| Career UI | `src/components/play/` |
-| State / simulation | `src/hooks/useGameSimulation.tsx` |
-| Calendar / national team | `src/lib/calendar.ts` |
-| Key games | `src/lib/keyGames.ts`, `src/lib/seasonFlow.ts` |
-| Injury (ATH) | `src/lib/injury.ts` |
-| Copy / i18n | `src/lib/i18n/dictionary.ts` |
+| UI | `src/components/play/` |
+| State | `src/hooks/useGameSimulation.tsx` |
+| Season / games | `src/lib/seasonFlow.ts`, `fullGame.ts`, `keyGames.ts` |
+| National team | `src/lib/nationalGames.ts`, `calendar.ts` |
+| Identity | `src/lib/careerFlavor.ts` |
+| i18n | `src/lib/i18n/dictionary.ts` |
 
 ---
 

@@ -2,22 +2,23 @@
 
 [Português](README.md) · [English](README.en.md) · **Español**
 
-Simulador de carrera de baloncesto en el navegador. Robas atributos de leyendas de la NBA en el draft, creces en la liga de tu país y luchas por llegar a la EuroLeague y la NBA — con decisiones con peso y momentos jugables.
+Simulador de carrera de baloncesto en el navegador. Robas atributos de leyendas NBA, defines identidad (apodo / firma), juegas momentos en cancha y luchas por Euro y NBA.
 
 **Jugar:** [/play](https://github.com/cauesilva1/LendaDaQuadra) · idiomas: PT / EN / ES
 
 ---
 
-## Qué haces
+## Flujo
 
-1. **Draft de atributos** — eliges stats de leyendas (tu techo de carrera)
-2. **How-to** — tarjeta rápida antes del draft que explica el loop
-3. **Temporada** — 3 partidos clave jugables (estilo Crunch Time) + dilema + simulación
-4. **Off-season** — entreno, clínica o streetball (riesgo de lesión ligado al ATL del draft)
-5. **Selección** — convocatorias a Mundial y Juegos Olímpicos
-6. **Meta** — selección → Euro → NBA, empezando con **16 años en 2016**
+1. **Setup** — nombre, país, posición, modo y **seed** opcional (misma seed = misma carrera para stream/amigos)
+2. **How-to** — lo que importa en la carrera
+3. **Draft** — robas el techo de atributos de las leyendas
+4. **Identidad** — apodo, jugada firma, drip, estilo de coach
+5. **Temporada** — 1 partido completo (**tú mandas el 2º tiempo**) + crunch + dilema + sim
+6. **Hub** — museo, línea de tiempo, 3x3, All-Star, contrato, reto diario, **simular carrera entera**
+7. **Selección** — Mundial / JJOO con llave visual y minutos por OVR
 
-Progresión, clasificación y barra de scouts pensadas para no quedarte en OVR bajo ni siempre último en la tabla.
+Empiezas con **16 años en 2016**. Save: `lenda-da-quadra-v9` (recomienda **nueva carrera** si vienes de un save viejo).
 
 ---
 
@@ -25,7 +26,7 @@ Progresión, clasificación y barra de scouts pensadas para no quedarte en OVR b
 
 - **Next.js** (App Router) · **React** · **TypeScript**
 - **Tailwind CSS** · **Framer Motion** · **Lucide**
-- Persistencia en `localStorage` (save `lenda-da-quadra-v7`)
+- Persistencia en `localStorage`
 
 ---
 
@@ -39,25 +40,26 @@ npm run dev
 Abre [http://localhost:3000](http://localhost:3000). Carrera: `/play` (o `/en/play`, `/es`).
 
 ```bash
-npm run build   # build de producción
-npm start       # servir el build
+npm run build
+npm start
+npx tsx scripts/smoke-stability.ts
 ```
 
 ---
 
-## Estructura (resumen)
+## Estructura
 
 | Área | Dónde |
 |------|--------|
-| UI de carrera | `src/components/play/` |
-| Estado / simulación | `src/hooks/useGameSimulation.tsx` |
-| Calendario / selección | `src/lib/calendar.ts` |
-| Partidos clave | `src/lib/keyGames.ts`, `src/lib/seasonFlow.ts` |
-| Lesión (ATL) | `src/lib/injury.ts` |
-| Textos / i18n | `src/lib/i18n/dictionary.ts` |
+| UI | `src/components/play/` |
+| Estado | `src/hooks/useGameSimulation.tsx` |
+| Temporada / partidos | `src/lib/seasonFlow.ts`, `fullGame.ts`, `keyGames.ts` |
+| Selección | `src/lib/nationalGames.ts`, `calendar.ts` |
+| Identidad | `src/lib/careerFlavor.ts` |
+| i18n | `src/lib/i18n/dictionary.ts` |
 
 ---
 
 ## Licencia
 
-Uso personal / portafolio — consulta el repositorio para más detalles.
+Uso personal / portafolio — consulta el repositorio.

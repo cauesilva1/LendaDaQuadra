@@ -8,9 +8,11 @@ const STEPS = [
   "howto.step2",
   "howto.step3",
   "howto.step4",
+  "howto.step5",
+  "howto.step6",
 ] as const;
 
-/** Pre-draft onboarding — streamer can read aloud in ~10s. */
+/** Pre-draft onboarding — streamer can read aloud in ~20s. */
 export function HowToPanel() {
   const { beginDraft, tr } = useGameActions();
 

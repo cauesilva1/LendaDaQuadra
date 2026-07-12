@@ -282,20 +282,20 @@ export const LEGACY_TIERS: LegacyTier[] = [
   { min: 170, id: "goat_debate" },
 ];
 
-export const STORAGE_KEY = "lenda-da-quadra-v7";
+export const STORAGE_KEY = "lenda-da-quadra-v9";
 /** Migrate from previous persist key on first load. */
-export const STORAGE_KEY_LEGACY = "lenda-da-quadra-v6";
+export const STORAGE_KEY_LEGACY = "lenda-da-quadra-v8";
 /** Reachable draft window after strong early growth from age 16. */
-export const NBA_DRAFT_OVR = 72;
+export const NBA_DRAFT_OVR = 68;
 /** Lottery / Top-10 stock — below this, pick is capped outside top 10. */
-export const NBA_DRAFT_LOTTERY_OVR = 80;
+export const NBA_DRAFT_LOTTERY_OVR = 78;
 export const NBA_DRAFT_MAX_AGE = 23;
-export const NBA_DRAFT_MIN_SEASONS = 3;
-export const NBA_FA_OVR = 78;
-export const NBA_FA_MIN_AGE = 23;
-export const NBA_FA_MIN_SEASONS = 3;
-/** EuroLeague: bridge out of domestic by ~season 3. */
-export const EURO_OVR = 68;
+export const NBA_DRAFT_MIN_SEASONS = 2;
+export const NBA_FA_OVR = 76;
+export const NBA_FA_MIN_AGE = 22;
+export const NBA_FA_MIN_SEASONS = 2;
+/** EuroLeague: bridge out of domestic by ~season 2. */
+export const EURO_OVR = 64;
 export const EURO_MIN_SEASONS = 1;
 export const MARKET_COST_UNIT = 250_000;
 export const MARKET_COST_HIGH = 3;

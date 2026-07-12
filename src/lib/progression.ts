@@ -18,16 +18,16 @@ import type {
 } from "@/types/game";
 
 const POS_START_BAND: Record<PositionId, [number, number]> = {
-  PG: [54, 62],
-  SG: [53, 61],
-  SF: [54, 62],
-  PF: [52, 61],
-  C: [52, 60],
+  PG: [58, 66],
+  SG: [57, 65],
+  SF: [58, 66],
+  PF: [56, 65],
+  C: [56, 64],
 };
 
-/** Age-16 starters — lower floor, room to climb into the 70s. */
-const START_ATTR_MIN = 50;
-const START_ATTR_MAX = 64;
+/** Age-16 starters — room to hit Euro/NBA in a few seasons. */
+const START_ATTR_MIN = 54;
+const START_ATTR_MAX = 68;
 
 function roughOvr(stats: AttrStats, posId: PositionId): number {
   const weights = POSITION_WEIGHTS[posId];
@@ -101,16 +101,36 @@ export function growTowardMax(
 ): AttrStats {
   const cur = completeStats(current);
   const max = completeStats(maxStats, 80);
-  // Teen window needs aggressive bumps so Euro/NBA stay reachable
+  // Teen window — aggressive so Euro/NBA stay reachable in 2–4 seasons
   const bumps =
-    age <= 18 ? 5 : age <= 21 ? 4 : age <= 24 ? 3 : age <= 28 ? 2 : age <= 31 ? 1 : 0;
+    age <= 18 ? 8 : age <= 21 ? 6 : age <= 24 ? 5 : age <= 28 ? 3 : age <= 31 ? 2 : 1;
   const keys = shuffleKeys();
   let left = bumps;
   for (const k of keys) {
     if (left <= 0) break;
     if (cur[k] >= max[k]) continue;
-    const gain = 1 + (Math.random() < 0.28 ? 1 : 0);
+    const gain = 1 + (Math.random() < 0.42 ? 1 : 0);
     cur[k] = clamp(cur[k] + gain, 0, max[k]);
+    left--;
+  }
+  return cur;
+}
+
+/** Extra permanent growth after each simulated season (not only offseason). */
+export function seasonDevelopmentBump(
+  current: Partial<AttrStats>,
+  maxStats: Partial<AttrStats>,
+  age: number,
+): AttrStats {
+  const cur = completeStats(current);
+  const max = completeStats(maxStats, 80);
+  const bumps = age <= 21 ? 3 : age <= 26 ? 2 : 1;
+  const keys = shuffleKeys();
+  let left = bumps;
+  for (const k of keys) {
+    if (left <= 0) break;
+    if (cur[k] >= max[k]) continue;
+    cur[k] = clamp(cur[k] + 1, 0, max[k]);
     left--;
   }
   return cur;

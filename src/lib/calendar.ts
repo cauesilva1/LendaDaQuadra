@@ -20,17 +20,34 @@ export function nationalEventForYear(
   return null;
 }
 
-/** Soft call-up gate — even fringe minutes for developing prospects. */
+/**
+ * Soft call-up gate — fringe minutes for young players with decent stock.
+ * Season 1 (2016) can still get an Olympic camp invite.
+ */
 export function isNationalCallupEligible(
   ovr: number,
   age: number,
   seasonsPlayed: number,
   kind: NationalEventKind,
 ): boolean {
-  if (seasonsPlayed < 1) return false;
+  if (seasonsPlayed < 1 && kind !== "olympics") return false;
   if (kind === "olympics") {
-    // 2016: ultra-young camp invite possible at 16 with OVR 58+
-    return ovr >= (age <= 17 ? 58 : 64);
+    if (age <= 17) return ovr >= 54;
+    if (seasonsPlayed >= 3) return ovr >= 60;
+    return ovr >= 62;
   }
-  return ovr >= 62;
+  if (seasonsPlayed >= 3) return ovr >= 58;
+  return ovr >= 60;
+}
+
+/** Career stage label key — not forever "prospect". */
+export function careerStageKey(
+  seasonsPlayed: number,
+  ovr: number,
+  inNba: boolean,
+): string {
+  if (inNba) return ovr >= 82 ? "stage.star" : "stage.nba";
+  if (ovr >= 78 || seasonsPlayed >= 6) return "stage.star";
+  if (seasonsPlayed >= 2 || ovr >= 68) return "stage.pro";
+  return "stage.prospect";
 }

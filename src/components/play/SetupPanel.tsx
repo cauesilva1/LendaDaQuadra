@@ -12,6 +12,7 @@ export function SetupPanel() {
   const [countryId, setCountryId] = useState<CountryId>("br");
   const [posId, setPosId] = useState<PositionId>("SG");
   const [mode, setMode] = useState<GameMode>("classic");
+  const [seed, setSeed] = useState("");
 
   return (
     <div className="mx-auto w-full max-w-xl space-y-8 text-center">
@@ -108,8 +109,24 @@ export function SetupPanel() {
         </div>
       </div>
 
+      <label className="block cursor-text space-y-2 text-left">
+        <span className="font-display text-xs uppercase tracking-wider text-white/50">
+          {tr("setup.seed")}
+        </span>
+        <input
+          value={seed}
+          onChange={(e) => setSeed(e.target.value.toUpperCase())}
+          placeholder={tr("setup.seedPlaceholder")}
+          className="w-full cursor-text rounded-lg border border-white/15 bg-arena-panel px-4 py-3 text-center font-mono text-sm text-white outline-none placeholder:text-white/30 focus:border-brand-yellow"
+        />
+      </label>
+
       <div className="flex justify-center">
-        <Button onClick={() => startDraft({ name, countryId, posId, mode })}>
+        <Button
+          onClick={() =>
+            startDraft({ name, countryId, posId, mode, seed: seed || undefined })
+          }
+        >
           {tr("cta.startDraft")}
         </Button>
       </div>

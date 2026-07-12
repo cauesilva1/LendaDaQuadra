@@ -6,6 +6,7 @@ import { ATTRS } from "@/lib/data";
 import { computeOverall, getCountry, getLeague } from "@/lib/simulation";
 import { completeStats } from "@/lib/progression";
 import { useGameActions, useGameState } from "@/hooks/useGameSimulation";
+import { RadarCompare } from "@/components/play/events/FeaturePanels";
 
 export function RevealPanel() {
   const { state } = useGameState();
@@ -86,6 +87,7 @@ export function RevealPanel() {
             </div>
           ))}
         </div>
+        <RadarCompare />
       </div>
       <Button className="mt-5" onClick={beginCareer}>
         {tr("cta.startCareer")}
