@@ -1,58 +1,50 @@
 "use client";
 
-import { useRef, useState } from "react";
-import {
-  Copy,
-  Crown,
-  Download,
-  RotateCcw,
-  Star,
-  Trophy,
-  Medal,
-} from "lucide-react";
+import { useState } from "react";
+import { Copy, Download, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ATTRS } from "@/lib/data";
 import { liveStats } from "@/lib/simulation";
 import { legacyTheme } from "@/lib/legacyTheme";
 import { useGameActions, useGameState } from "@/hooks/useGameSimulation";
 
-function OvrChart({
+function OvrSpark({
   points,
-  stroke,
+  color,
 }: {
   points: { age: number; ovr: number }[];
-  stroke: string;
+  color: string;
 }) {
-  if (points.length < 2) {
-    return (
-      <div className="flex h-14 items-center justify-center text-xs text-white/40">
-        —
-      </div>
-    );
-  }
-  const minO = Math.min(...points.map((p) => p.ovr)) - 5;
-  const maxO = Math.max(...points.map((p) => p.ovr)) + 5;
-  const w = 280;
-  const h = 56;
+  if (points.length < 2) return null;
+  const minO = Math.min(...points.map((p) => p.ovr)) - 3;
+  const maxO = Math.max(...points.map((p) => p.ovr)) + 3;
+  const w = 320;
+  const h = 48;
   const coords = points.map((p, i) => {
-    const x = (i / (points.length - 1)) * (w - 12) + 6;
-    const y = h - 6 - ((p.ovr - minO) / (maxO - minO)) * (h - 12);
-    return `${x},${y}`;
+    const x = (i / (points.length - 1)) * (w - 8) + 4;
+    const y = h - 4 - ((p.ovr - minO) / (maxO - minO)) * (h - 8);
+    return [x, y] as const;
   });
+  const line = coords.map(([x, y]) => `${x},${y}`).join(" ");
+  const area = `4,${h} ${line} ${w - 4},${h}`;
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-14 w-full">
+    <svg viewBox={`0 0 ${w} ${h}`} className="h-12 w-full">
+      <defs>
+        <linearGradient id="ovrFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={area} fill="url(#ovrFill)" />
       <polyline
         fill="none"
-        stroke={stroke}
-        strokeWidth="2"
-        points={coords.join(" ")}
+        stroke={color}
+        strokeWidth="2.2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        points={line}
       />
-      {points.map((p, i) => {
-        const [x, y] = coords[i]!.split(",").map(Number);
-        return <circle key={p.age} cx={x} cy={y} r="2.5" fill={stroke} />;
-      })}
     </svg>
   );
 }
@@ -73,98 +65,153 @@ function downloadLegacyPng(opts: {
   theme: ReturnType<typeof legacyTheme>;
 }) {
   const W = 720;
-  const H = 960;
+  const H = 1020;
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
-
   const { theme } = opts;
-  ctx.fillStyle = theme.canvasBg;
+
+  const bg = ctx.createLinearGradient(0, 0, W * 0.2, H);
+  bg.addColorStop(0, theme.bg1);
+  bg.addColorStop(0.55, theme.bg0);
+  bg.addColorStop(1, "#05070c");
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Atmosphere
-  const g = ctx.createRadialGradient(W * 0.5, 80, 20, W * 0.5, 200, 420);
-  g.addColorStop(0, theme.canvasAccent + "55");
-  g.addColorStop(1, "transparent");
-  ctx.fillStyle = g;
+  // Accent bar
+  ctx.fillStyle = theme.accent;
+  ctx.fillRect(0, 0, 10, H);
+
+  // Soft top glow
+  const glow = ctx.createRadialGradient(W * 0.55, 0, 20, W * 0.55, 120, 380);
+  glow.addColorStop(0, theme.accent + "55");
+  glow.addColorStop(1, "transparent");
+  ctx.fillStyle = glow;
   ctx.fillRect(0, 0, W, H);
 
-  // Frame
-  ctx.strokeStyle = theme.canvasAccent;
-  ctx.lineWidth = 6;
-  ctx.strokeRect(28, 28, W - 56, H - 56);
-
-  ctx.fillStyle = theme.canvasAccent;
-  ctx.font = "600 22px system-ui, sans-serif";
-  ctx.fillText("LENDA DA QUADRA", 56, 80);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "800 64px system-ui, sans-serif";
-  ctx.fillText(opts.name.toUpperCase(), 56, 160);
-
-  ctx.fillStyle = "rgba(255,255,255,0.55)";
-  ctx.font = "500 24px system-ui, sans-serif";
-  ctx.fillText(`${opts.pos} · ${opts.seasons} seasons`, 56, 200);
-
-  // OVR badge
+  // Court circle watermark
+  ctx.save();
+  ctx.globalAlpha = 0.08;
+  ctx.strokeStyle = theme.accent;
+  ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.arc(W - 120, 150, 64, 0, Math.PI * 2);
-  ctx.fillStyle = theme.canvasBg;
-  ctx.fill();
-  ctx.strokeStyle = theme.canvasAccent;
-  ctx.lineWidth = 4;
+  ctx.arc(W * 0.72, H * 0.38, 160, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.fillStyle = theme.canvasAccent;
-  ctx.font = "800 48px system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText(String(opts.ovr), W - 120, 162);
-  ctx.font = "600 14px system-ui, sans-serif";
-  ctx.fillText("OVR", W - 120, 186);
+  ctx.beginPath();
+  ctx.arc(W * 0.72, H * 0.38, 70, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.fillStyle = "rgba(255,255,255,0.38)";
+  ctx.font = "600 18px Bebas Neue, Impact, system-ui, sans-serif";
+  ctx.fillText("LENDA DA QUADRA", 48, 64);
+
+  // Giant OVR watermark
+  ctx.save();
+  ctx.globalAlpha = 0.07;
+  ctx.fillStyle = theme.accent;
+  ctx.font = "800 280px Bebas Neue, Impact, system-ui, sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText(String(opts.ovr), W - 36, 340);
+  ctx.restore();
   ctx.textAlign = "left";
 
-  ctx.fillStyle = theme.canvasTitle;
-  ctx.font = "800 36px system-ui, sans-serif";
-  const tierLines = opts.tierLabel.toUpperCase();
-  wrapText(ctx, tierLines, 56, 280, W - 112, 40);
+  ctx.fillStyle = "#fff";
+  ctx.font = "800 72px Bebas Neue, Impact, system-ui, sans-serif";
+  ctx.fillText(opts.name.toUpperCase(), 48, 150);
 
-  ctx.fillStyle = "rgba(255,255,255,0.6)";
-  ctx.font = "400 22px system-ui, sans-serif";
-  wrapText(ctx, opts.tierDesc, 56, 360, W - 112, 30);
+  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  ctx.font = "500 22px system-ui, sans-serif";
+  ctx.fillText(`${opts.pos}  ·  ${opts.seasons} seasons`, 48, 190);
+
+  // OVR badge
+  ctx.fillStyle = theme.accentSoft;
+  roundRect(ctx, 48, 220, 120, 88, 14);
+  ctx.fill();
+  ctx.strokeStyle = theme.accent;
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, 48, 220, 120, 88, 14);
+  ctx.stroke();
+  ctx.fillStyle = theme.accent;
+  ctx.font = "800 48px Bebas Neue, Impact, system-ui, sans-serif";
+  ctx.fillText(String(opts.ovr), 68, 278);
+  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  ctx.font = "600 14px system-ui, sans-serif";
+  ctx.fillText("OVR FINAL", 68, 298);
+
+  // Tier
+  ctx.fillStyle = theme.canvasTitle;
+  ctx.font = "800 40px Bebas Neue, Impact, system-ui, sans-serif";
+  wrapText(ctx, opts.tierLabel.toUpperCase(), 48, 370, W - 96, 44);
+
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.font = "400 20px system-ui, sans-serif";
+  wrapText(ctx, opts.tierDesc, 48, 460, W - 96, 28);
+
+  // Divider
+  const div = ctx.createLinearGradient(48, 0, W - 48, 0);
+  div.addColorStop(0, "transparent");
+  div.addColorStop(0.5, theme.accent);
+  div.addColorStop(1, "transparent");
+  ctx.strokeStyle = div;
+  ctx.globalAlpha = 0.55;
+  ctx.beginPath();
+  ctx.moveTo(48, 530);
+  ctx.lineTo(W - 48, 530);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
 
   const stats: [string, number][] = [
-    ["League", opts.league],
+    ["LIGA", opts.league],
     ["NBA", opts.nba],
-    ["Euro", opts.euro],
+    ["EURO", opts.euro],
     ["MVP", opts.mvp],
-    ["Finals MVP", opts.finals],
-    ["All-Star", opts.allstars],
+    ["FMVP", opts.finals],
+    ["AS", opts.allstars],
   ];
   stats.forEach(([label, val], i) => {
     const col = i % 3;
     const row = Math.floor(i / 3);
-    const x = 56 + col * 210;
-    const y = 480 + row * 120;
-    ctx.strokeStyle = theme.canvasAccent + "66";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, 190, 96);
-    ctx.fillStyle = theme.canvasAccent;
-    ctx.font = "800 40px system-ui, sans-serif";
-    ctx.fillText(String(val), x + 16, y + 52);
-    ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.font = "600 16px system-ui, sans-serif";
-    ctx.fillText(label.toUpperCase(), x + 16, y + 78);
+    const x = 48 + col * 220;
+    const y = 570 + row * 130;
+    ctx.fillStyle = "rgba(255,255,255,0.04)";
+    roundRect(ctx, x, y, 200, 108, 16);
+    ctx.fill();
+    ctx.fillStyle = theme.accent;
+    ctx.font = "800 52px Bebas Neue, Impact, system-ui, sans-serif";
+    ctx.fillText(String(val), x + 22, y + 62);
+    ctx.fillStyle = "rgba(255,255,255,0.4)";
+    ctx.font = "600 15px system-ui, sans-serif";
+    ctx.fillText(label, x + 22, y + 88);
   });
 
-  ctx.fillStyle = "rgba(255,255,255,0.35)";
-  ctx.font = "500 16px system-ui, sans-serif";
-  ctx.fillText("lendadaquadra.app", 56, H - 56);
+  ctx.fillStyle = "rgba(255,255,255,0.28)";
+  ctx.font = "500 15px system-ui, sans-serif";
+  ctx.fillText("lendadaquadra.app", 48, H - 48);
 
   const a = document.createElement("a");
   a.download = `lenda-${opts.name.replace(/\s+/g, "-").toLowerCase()}.png`;
   a.href = canvas.toDataURL("image/png");
   a.click();
+}
+
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }
 
 function wrapText(
@@ -195,7 +242,6 @@ export function LegacyCard() {
   const { state, ovr, legacyTierId } = useGameState();
   const { restart, copySummary, tr } = useGameActions();
   const [copied, setCopied] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
   const career = state.career;
   const player = state.player;
   if (!career || !player) return null;
@@ -203,6 +249,9 @@ export function LegacyCard() {
   const theme = legacyTheme(legacyTierId);
   const trph = career.trophies;
   const attrs = liveStats(state);
+  const keyAttrs = ATTRS.filter((a) =>
+    ["shot", "fin", "def", "clu"].includes(a.k),
+  );
 
   const handleCopy = async () => {
     const ok = await copySummary();
@@ -230,125 +279,174 @@ export function LegacyCard() {
     });
   };
 
+  const trophies = [
+    [tr("legacy.leagueTitles"), trph.leagueTitles],
+    [tr("legacy.nbaTitles"), trph.nbaTitles],
+    [tr("legacy.euroTitles"), trph.euroTitles ?? 0],
+    [tr("legacy.mvps"), trph.mvps],
+    [tr("legacy.finals"), trph.finalsMvps],
+    [tr("legacy.allstars"), trph.allStars],
+  ] as const;
+
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-md flex-col items-center justify-center overflow-hidden px-1">
-      <p className="shrink-0 text-center font-display text-[10px] uppercase tracking-widest text-white/50">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-[380px] flex-col items-center justify-center overflow-hidden px-1">
+      <p className="shrink-0 text-center font-sans text-[10px] font-medium uppercase tracking-[0.32em] text-white/40">
         {tr("legacy.eyebrow")}
       </p>
 
-      {/* Shareable career image card */}
       <div
-        ref={cardRef}
-        className={`relative mt-2 w-full overflow-hidden rounded-2xl border-2 bg-gradient-to-b p-3 ${theme.panel}`}
+        className="relative mt-3 w-full overflow-hidden rounded-[22px]"
         style={{
-          borderColor: theme.accent,
-          boxShadow: `0 0 32px ${theme.glow}`,
+          background: `linear-gradient(165deg, ${theme.bg1} 0%, ${theme.bg0} 55%, #05070c 100%)`,
+          boxShadow: `0 24px 48px rgba(0,0,0,0.5), 0 0 0 1px ${theme.accent}40, 0 0 40px ${theme.glow}`,
         }}
       >
+        {/* Left accent */}
         <div
-          className="pointer-events-none absolute -left-8 -top-8 h-32 w-32 rounded-full blur-3xl"
-          style={{ background: theme.glow }}
+          className="absolute inset-y-0 left-0 w-[3px]"
+          style={{ background: theme.accent }}
         />
-        <div className="relative flex items-center gap-3">
-          <div
-            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2"
-            style={{ borderColor: theme.accent, background: theme.glow }}
+
+        {/* Court watermark */}
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute -right-8 top-16 h-56 w-56 opacity-[0.1]"
+          viewBox="0 0 200 200"
+        >
+          <circle
+            cx="100"
+            cy="100"
+            r="88"
+            fill="none"
+            stroke={theme.accent}
+            strokeWidth="2"
+          />
+          <circle
+            cx="100"
+            cy="100"
+            r="36"
+            fill="none"
+            stroke={theme.accent}
+            strokeWidth="2"
+          />
+          <line
+            x1="12"
+            y1="100"
+            x2="188"
+            y2="100"
+            stroke={theme.accent}
+            strokeWidth="2"
+          />
+        </svg>
+
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-28"
+          style={{
+            background: `radial-gradient(ellipse at 40% 0%, ${theme.accentSoft}, transparent 70%)`,
+          }}
+        />
+
+        <div className="relative px-5 pb-5 pt-5">
+          {/* Giant OVR wash */}
+          <p
+            aria-hidden
+            className="pointer-events-none absolute -right-1 top-2 font-display text-[120px] leading-none opacity-[0.07]"
+            style={{ color: theme.accent }}
           >
-            <div className="text-center">
-              <div
-                className={`font-display text-2xl leading-none ${theme.title}`}
+            {ovr}
+          </p>
+
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0 text-left">
+              <p className="font-sans text-[9px] uppercase tracking-[0.28em] text-white/35">
+                Lenda da Quadra
+              </p>
+              <h2 className="mt-1 truncate font-display text-[28px] uppercase leading-none text-white">
+                {player.name}
+              </h2>
+              <p className="mt-1.5 font-sans text-[11px] text-white/45">
+                {player.posId} · {career.seasonsPlayed}{" "}
+                {tr("dash.season").toLowerCase()}s
+              </p>
+            </div>
+            <div
+              className="flex h-[72px] w-[72px] shrink-0 flex-col items-center justify-center rounded-2xl"
+              style={{
+                background: theme.accentSoft,
+                boxShadow: `inset 0 0 0 1px ${theme.accent}66`,
+              }}
+            >
+              <span
+                className={`font-display text-[34px] leading-none ${theme.ovrClass}`}
               >
                 {ovr}
-              </div>
-              <div className="text-[7px] uppercase tracking-wider text-white/50">
+              </span>
+              <span className="mt-0.5 font-sans text-[8px] uppercase tracking-[0.2em] text-white/40">
                 {tr("legacy.ovr")}
-              </div>
+              </span>
             </div>
           </div>
-          <div className="min-w-0 text-left">
-            <h2 className="truncate font-display text-xl uppercase leading-none text-white">
-              {player.name}
-            </h2>
-            <p className="mt-0.5 text-[10px] text-white/50">
-              {player.posId} · {career.seasonsPlayed}{" "}
-              {tr("dash.season").toLowerCase()}s
-            </p>
-            <h3
-              className={`mt-1 font-display text-sm uppercase leading-tight ${theme.title}`}
+
+          <div className="mt-4 text-left">
+            <span
+              className={`inline-block rounded-sm px-2 py-1 font-sans text-[9px] font-semibold uppercase tracking-[0.16em] ${theme.ribbonClass}`}
             >
               {tr(`tier.${legacyTierId}`)}
-            </h3>
-            <p className="mt-0.5 text-[10px] leading-snug text-white/45">
+            </span>
+            <p className="mt-2 font-sans text-[12px] leading-relaxed text-white/50">
               {tr(`tier.${legacyTierId}.desc`)}
             </p>
           </div>
-        </div>
 
-        <div className="relative mt-3">
-          <p className="mb-1 font-display text-[9px] uppercase tracking-widest text-white/45">
-            {tr("legacy.attrs")}
-          </p>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-            {ATTRS.map((a) => (
-              <div key={a.k}>
-                <div className="mb-0.5 flex justify-between text-[9px] uppercase text-white/50">
-                  <span className="truncate">{tr(a.labelKey)}</span>
-                  <span className={theme.title}>{attrs[a.k]}</span>
-                </div>
-                <ProgressBar value={attrs[a.k] ?? 0} />
+          <div
+            className="mt-4 h-px w-full opacity-40"
+            style={{
+              background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)`,
+            }}
+          />
+
+          {/* Key attrs — slim */}
+          <div className="mt-4 grid grid-cols-4 gap-2">
+            {keyAttrs.map((a) => (
+              <div key={a.k} className="text-center">
+                <p className="font-sans text-[8px] uppercase tracking-wider text-white/35">
+                  {tr(a.labelKey).slice(0, 4)}
+                </p>
+                <p
+                  className={`mt-0.5 font-display text-lg leading-none ${theme.ovrClass}`}
+                >
+                  {attrs[a.k]}
+                </p>
               </div>
             ))}
           </div>
-        </div>
 
-        <div className="relative mt-3">
-          <div className="grid grid-cols-3 gap-1">
-            {[
-              [Trophy, tr("legacy.leagueTitles"), trph.leagueTitles],
-              [Medal, tr("legacy.nbaTitles"), trph.nbaTitles],
-              [Trophy, tr("legacy.euroTitles"), trph.euroTitles ?? 0],
-              [Crown, tr("legacy.mvps"), trph.mvps],
-              [Star, tr("legacy.finals"), trph.finalsMvps],
-              [Star, tr("legacy.allstars"), trph.allStars],
-            ].map(([Icon, label, val], i) => {
-              const I = Icon as typeof Trophy;
-              return (
-                <div
-                  key={i}
-                  className="rounded-md border px-1 py-1 text-center"
-                  style={{
-                    borderColor: theme.accent,
-                    background: theme.glow,
-                  }}
+          {/* Trophies — no nested cards */}
+          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-3">
+            {trophies.map(([label, val]) => (
+              <div key={label as string} className="text-left">
+                <p
+                  className={`font-display text-2xl leading-none ${theme.ovrClass}`}
                 >
-                  <I
-                    className="mx-auto h-3 w-3"
-                    style={{ color: theme.canvasAccent }}
-                  />
-                  <div className="font-display text-sm text-white">
-                    {val as number}
-                  </div>
-                  <div className="text-[8px] uppercase leading-tight text-white/45">
-                    {label as string}
-                  </div>
-                </div>
-              );
-            })}
+                  {val}
+                </p>
+                <p className="mt-0.5 font-sans text-[9px] uppercase leading-tight tracking-wide text-white/40">
+                  {label}
+                </p>
+              </div>
+            ))}
           </div>
-        </div>
 
-        <div className="relative mt-2">
-          <p className="mb-0.5 font-display text-[9px] uppercase tracking-widest text-white/45">
-            {tr("legacy.chart")}
-          </p>
-          <OvrChart
-            points={career.ovrHistory}
-            stroke={theme.canvasAccent}
-          />
+          <div className="mt-4">
+            <p className="mb-1 font-sans text-[9px] uppercase tracking-[0.22em] text-white/35">
+              {tr("legacy.chart")}
+            </p>
+            <OvrSpark points={career.ovrHistory} color={theme.accent} />
+          </div>
         </div>
       </div>
 
-      <div className="mt-3 flex shrink-0 flex-wrap justify-center gap-2">
+      <div className="mt-4 flex shrink-0 flex-wrap justify-center gap-2">
         <Button variant="ghost" onClick={handleDownload}>
           <Download className="h-3.5 w-3.5" />
           {tr("legacy.download")}

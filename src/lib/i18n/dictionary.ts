@@ -719,6 +719,12 @@ const pt: Dict = {
   "crunch.note.overtime": "PRORROGAÇÃO (OVERTIME)! REINICIANDO · 12s · placar zerado",
 
   "footer.note": "Projeto de fã. Lendas e franquias reais · clubes e estatísticas simuladas.",
+  "nav.home": "Início",
+  "nav.about": "Sobre",
+  "nav.docs": "Docs",
+  "nav.privacy": "Privacidade",
+  "nav.contact": "Contato",
+  "nav.bug": "Reportar bug",
 };
 
 const enFull: Dict = {
@@ -1440,6 +1446,12 @@ const enFull: Dict = {
   "crunch.note.overtime": "OVERTIME! RESETTING · 12s · scoreboard wiped",
 
   "footer.note": "Fan project. Real legends & franchises · simulated clubs & stats.",
+  "nav.home": "Home",
+  "nav.about": "About",
+  "nav.docs": "Docs",
+  "nav.privacy": "Privacy",
+  "nav.contact": "Contact",
+  "nav.bug": "Report bug",
 };
 
 const esFull: Dict = {
@@ -2161,6 +2173,12 @@ const esFull: Dict = {
   "crunch.note.overtime": "¡PRÓRROGA (OVERTIME)! REINICIO · 12s · marcador a cero",
 
   "footer.note": "Proyecto de fans. Leyendas y franquicias reales · clubs y stats simulados.",
+  "nav.home": "Inicio",
+  "nav.about": "Sobre",
+  "nav.docs": "Docs",
+  "nav.privacy": "Privacidad",
+  "nav.contact": "Contacto",
+  "nav.bug": "Reportar bug",
 };
 
 export const DICTIONARIES: Record<Locale, Dict> = {

@@ -2,50 +2,136 @@
 
 import Link from "next/link";
 import { SiteHeader } from "@/components/landing/SiteHeader";
+import { SiteFooter } from "@/components/landing/SiteFooter";
 import { playHref } from "@/lib/i18n";
 import { t } from "@/lib/i18n/dictionary";
+import { LANDING_TIERS, legacyTheme } from "@/lib/legacyTheme";
 import type { Locale } from "@/types/game";
 
-/** Four showcase tiers — each with a distinct color language. */
-const PREVIEW = [
-  {
-    ovr: 72,
-    tier: "solid",
-    className:
-      "border-sky-400/60 bg-gradient-to-b from-sky-950/90 to-[#071018] shadow-[0_0_20px_rgba(56,189,248,0.2)]",
-    ovrClass: "text-sky-300",
-    titleClass: "text-sky-200",
-  },
-  {
-    ovr: 86,
-    tier: "allstar",
-    className:
-      "border-amber-400/70 bg-gradient-to-b from-amber-950/90 to-[#1a1006] shadow-[0_0_22px_rgba(251,191,36,0.28)]",
-    ovrClass: "text-amber-300",
-    titleClass: "text-amber-200",
-  },
-  {
-    ovr: 94,
-    tier: "goat_debate",
-    className:
-      "border-violet-400/80 bg-gradient-to-b from-violet-950/90 to-[#12081a] shadow-[0_0_26px_rgba(192,132,252,0.35)]",
-    ovrClass: "text-violet-300",
-    titleClass: "text-violet-200",
-  },
-  {
-    ovr: 99,
-    tier: "goat",
-    className:
-      "border-yellow-300 bg-gradient-to-b from-black via-[#1a1400] to-black shadow-[0_0_32px_rgba(250,204,21,0.45)] animate-glow-pulse",
-    ovrClass:
-      "bg-gradient-to-r from-yellow-200 to-amber-400 bg-clip-text text-transparent",
-    titleClass: "text-yellow-200",
-  },
-] as const;
+function CourtLines({ color }: { color: string }) {
+  return (
+    <svg
+      aria-hidden
+      className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.14]"
+      viewBox="0 0 160 220"
+      preserveAspectRatio="none"
+    >
+      <rect
+        x="10"
+        y="10"
+        width="140"
+        height="200"
+        fill="none"
+        stroke={color}
+        strokeWidth="1.2"
+      />
+      <circle
+        cx="80"
+        cy="110"
+        r="28"
+        fill="none"
+        stroke={color}
+        strokeWidth="1"
+      />
+      <line x1="10" y1="110" x2="150" y2="110" stroke={color} strokeWidth="1" />
+      <path
+        d="M40 10 C40 50 120 50 120 10"
+        fill="none"
+        stroke={color}
+        strokeWidth="1"
+      />
+    </svg>
+  );
+}
+
+function TierPreviewCard({
+  locale,
+  ovr,
+  tier,
+}: {
+  locale: Locale;
+  ovr: number;
+  tier: string;
+}) {
+  const theme = legacyTheme(tier);
+  const isGoat = tier === "goat";
+
+  return (
+    <article
+      className="relative w-[158px] shrink-0 overflow-hidden rounded-[18px] sm:w-[186px]"
+      style={{
+        boxShadow: `0 14px 32px rgba(0,0,0,0.42), 0 0 0 1px ${theme.accent}33, 0 0 24px ${theme.glow}`,
+      }}
+    >
+      <div
+        className="relative aspect-[3/4] overflow-hidden"
+        style={{
+          background: `linear-gradient(165deg, ${theme.bg1} 0%, ${theme.bg0} 48%, #05070c 100%)`,
+        }}
+      >
+        <CourtLines color={theme.accent} />
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-70"
+          style={{
+            background: `radial-gradient(ellipse at 50% 0%, ${theme.accentSoft}, transparent 70%)`,
+          }}
+        />
+        <div
+          className="absolute inset-y-0 left-0 w-[3px]"
+          style={{ background: theme.accent }}
+        />
+
+        <div className="relative flex h-full flex-col px-3.5 pb-3.5 pt-3 text-left">
+          <div className="flex items-start justify-between gap-2">
+            <p className="font-sans text-[8px] font-medium uppercase tracking-[0.28em] text-white/40">
+              Lenda
+            </p>
+            <div className="text-right">
+              <p
+                className={`font-display text-[44px] leading-none tracking-tight sm:text-[50px] ${theme.ovrClass}`}
+                style={
+                  isGoat ? { textShadow: `0 0 24px ${theme.glow}` } : undefined
+                }
+              >
+                {ovr}
+              </p>
+              <p className="mt-0.5 font-sans text-[8px] uppercase tracking-[0.22em] text-white/35">
+                OVR
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-auto">
+            <span
+              className={`inline-block rounded-sm px-1.5 py-0.5 font-sans text-[8px] font-semibold uppercase tracking-[0.18em] ${theme.ribbonClass}`}
+            >
+              {isGoat ? "99 · Elite" : tier === "allstar" ? "Star" : "Career"}
+            </span>
+            <h3
+              className={`mt-1.5 font-display text-[18px] uppercase leading-[0.95] tracking-wide sm:text-[20px] ${theme.titleClass}`}
+            >
+              {t(locale, `tier.${tier}`)}
+            </h3>
+            <p className="mt-1.5 line-clamp-3 font-sans text-[10px] leading-relaxed text-white/45 sm:text-[11px]">
+              {t(locale, `tier.${tier}.desc`)}
+            </p>
+          </div>
+
+          <div
+            className="mt-2.5 h-px w-full opacity-50"
+            style={{
+              background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)`,
+            }}
+          />
+        </div>
+      </div>
+    </article>
+  );
+}
 
 export function LandingPage({ locale }: { locale: Locale }) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-arena-bg text-brand-text">
+    <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-arena-bg text-brand-text lg:h-dvh lg:overflow-hidden">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,122,0,0.14)_0%,transparent_55%),radial-gradient(ellipse_at_80%_80%,rgba(255,59,48,0.1)_0%,transparent_45%),radial-gradient(ellipse_at_20%_70%,rgba(30,58,138,0.25)_0%,transparent_50%)]"
@@ -60,17 +146,14 @@ export function LandingPage({ locale }: { locale: Locale }) {
         }}
       />
 
-      <SiteHeader locale={locale} />
+      <SiteHeader locale={locale} compact />
 
-      <main className="relative z-10 mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-5xl flex-col items-center justify-center px-4 py-16 text-center sm:py-20">
-        <p className="animate-fade-up mb-4 font-sans text-[11px] font-medium uppercase tracking-[0.35em] text-arena-accent sm:text-xs">
+      <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-4 py-4 text-center sm:py-5 lg:py-3">
+        <p className="mb-1.5 font-sans text-[10px] font-medium uppercase tracking-[0.32em] text-arena-accent sm:mb-2 sm:text-[11px]">
           {t(locale, "brand.eyebrow")}
         </p>
 
-        <h1
-          className="animate-fade-up mx-auto max-w-4xl font-display text-5xl leading-[0.95] tracking-wide text-white sm:text-7xl md:text-8xl"
-          style={{ animationDelay: "80ms" }}
-        >
+        <h1 className="mx-auto max-w-4xl font-display text-[2.65rem] leading-[0.92] tracking-wide text-white sm:text-6xl lg:text-[4.25rem]">
           {t(locale, "hero.title1")}{" "}
           <span className="bg-gradient-to-r from-arena-accent to-arena-buzzer bg-clip-text text-transparent">
             {t(locale, "hero.title2")}
@@ -78,49 +161,33 @@ export function LandingPage({ locale }: { locale: Locale }) {
           ?
         </h1>
 
-        <p
-          className="animate-fade-up mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/65 sm:text-lg"
-          style={{ animationDelay: "160ms" }}
-        >
+        <p className="mx-auto mt-2 max-w-xl text-sm leading-snug text-white/60 sm:mt-3 sm:text-base lg:max-w-2xl">
           {t(locale, "hero.sub")}
         </p>
 
-        <div
-          className="animate-fade-up mt-12 flex flex-wrap justify-center gap-4 sm:gap-5"
-          style={{ animationDelay: "240ms" }}
-        >
-          {PREVIEW.map((card) => (
-            <div
-              key={card.tier}
-              className={`w-[140px] rounded-2xl border-2 p-4 text-center backdrop-blur-sm sm:w-[160px] ${card.className}`}
-            >
-              <div className={`font-display text-4xl ${card.ovrClass}`}>
-                {card.ovr}
-              </div>
-              <div
-                className={`mt-1 font-display text-[11px] uppercase leading-tight sm:text-xs ${card.titleClass}`}
-              >
-                {t(locale, `tier.${card.tier}`)}
-              </div>
-              <p className="mt-2 text-[10px] leading-snug text-white/50 sm:text-xs">
-                {t(locale, `tier.${card.tier}.desc`)}
-              </p>
+        <div className="mt-4 flex w-full max-w-4xl snap-x snap-mandatory justify-start gap-3 overflow-x-auto px-1 pb-1 sm:mt-5 sm:justify-center sm:gap-4 sm:overflow-visible lg:mt-4">
+          {LANDING_TIERS.map((card) => (
+            <div key={card.tier} className="snap-center">
+              <TierPreviewCard
+                locale={locale}
+                ovr={card.ovr}
+                tier={card.tier}
+              />
             </div>
           ))}
         </div>
 
         <Link
           href={playHref(locale)}
-          className="animate-fade-up mt-14 inline-flex items-center justify-center rounded-full bg-arena-accent px-10 py-4 font-display text-2xl uppercase tracking-wide text-arena-bg shadow-[0_0_28px_rgba(255,122,0,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-arena-buzzer hover:text-white hover:shadow-[0_0_36px_rgba(255,59,48,0.5)] active:translate-y-0"
-          style={{ animationDelay: "320ms" }}
+          className="mt-4 inline-flex items-center justify-center rounded-full bg-arena-accent px-9 py-3 font-display text-xl uppercase tracking-wide text-arena-bg shadow-[0_0_24px_rgba(255,122,0,0.35)] transition-colors duration-200 hover:bg-arena-buzzer hover:text-white sm:mt-5 sm:px-10 sm:py-3.5 sm:text-2xl lg:mt-4"
         >
           [ {t(locale, "cta.play")} ]
         </Link>
-
-        <p className="mt-16 text-center text-xs text-white/35 sm:mt-20">
-          {t(locale, "footer.note")}
-        </p>
       </main>
+
+      <div className="relative z-10">
+        <SiteFooter locale={locale} compact />
+      </div>
     </div>
   );
 }
