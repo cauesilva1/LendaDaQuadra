@@ -199,7 +199,7 @@ export function startQuickCrunchState(s: GameState): GameState {
       playerScore: scores.playerScore - 2,
       opponentScore: scores.opponentScore,
     }),
-    clutchKind: "key_game",
+    clutchKind: "quick",
     centerView: "quick_crunch",
   };
 }

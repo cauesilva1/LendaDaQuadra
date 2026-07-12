@@ -14,6 +14,7 @@ import {
   getClubStrength,
   computeOfferSalary,
   liveStats,
+  applyFinalsResult,
 } from "@/lib/simulation";
 import { clamp, uid } from "@/lib/utils";
 import type { DocumentaryLine, GameState, PressItem } from "@/types/game";
@@ -56,6 +57,41 @@ export function simulateFullCareer(state: GameState): {
     const player = s.player;
     const sim = simulateSeason({ ...s, career });
     let nextCareer = sim.career;
+    let pending = sim.pendingFinals;
+    // Resolve playoff/finals in the fast-forward path (was discarding titles)
+    let finalsGuard = 0;
+    while (pending && finalsGuard++ < 4) {
+      const won = Math.random() < pending.winChanceOnSkip;
+      const applied = applyFinalsResult(
+        {
+          ...s,
+          career: nextCareer,
+          currentStats: completeStats(
+            liveStats({ ...s, career: nextCareer }),
+          ),
+          pendingFinals: pending,
+        },
+        won,
+        false,
+      );
+      nextCareer = applied.career;
+      pending = applied.nextFinals;
+      if (won) {
+        doc.push({
+          season: nextCareer.season,
+          age: nextCareer.age,
+          year: nextCareer.calendarYear,
+          ovr: computeOverall(
+            completeStats(liveStats({ ...s, career: nextCareer })),
+            player.posId,
+          ),
+          club: nextCareer.clubName,
+          lineKey: "doc.title",
+          vars: { club: nextCareer.clubName },
+        });
+      }
+    }
+
     let stats = seasonDevelopmentBump(
       liveStats({ ...s, career: nextCareer }),
       s.maxStats,

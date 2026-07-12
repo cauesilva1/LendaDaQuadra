@@ -6,29 +6,46 @@ import { playHref } from "@/lib/i18n";
 import { t } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/types/game";
 
+/** Four showcase tiers — each with a distinct color language. */
 const PREVIEW = [
   {
     ovr: 72,
     tier: "solid",
-    className: "border-white/15 shadow-none",
+    className:
+      "border-sky-400/60 bg-gradient-to-b from-sky-950/90 to-[#071018] shadow-[0_0_20px_rgba(56,189,248,0.2)]",
+    ovrClass: "text-sky-300",
+    titleClass: "text-sky-200",
   },
   {
     ovr: 86,
     tier: "allstar",
-    className: "border-white/20 shadow-[0_0_16px_rgba(255,122,0,0.12)]",
+    className:
+      "border-amber-400/70 bg-gradient-to-b from-amber-950/90 to-[#1a1006] shadow-[0_0_22px_rgba(251,191,36,0.28)]",
+    ovrClass: "text-amber-300",
+    titleClass: "text-amber-200",
   },
   {
     ovr: 94,
     tier: "goat_debate",
     className:
-      "border-transparent animate-glow-pulse bg-gradient-to-b from-arena-panel to-[#1a0f0c] [box-shadow:0_0_28px_rgba(255,122,0,0.45),0_0_56px_rgba(255,59,48,0.28)]",
+      "border-violet-400/80 bg-gradient-to-b from-violet-950/90 to-[#12081a] shadow-[0_0_26px_rgba(192,132,252,0.35)]",
+    ovrClass: "text-violet-300",
+    titleClass: "text-violet-200",
+  },
+  {
+    ovr: 99,
+    tier: "goat",
+    className:
+      "border-yellow-300 bg-gradient-to-b from-black via-[#1a1400] to-black shadow-[0_0_32px_rgba(250,204,21,0.45)] animate-glow-pulse",
+    ovrClass:
+      "bg-gradient-to-r from-yellow-200 to-amber-400 bg-clip-text text-transparent",
+    titleClass: "text-yellow-200",
   },
 ] as const;
 
 export function LandingPage({ locale }: { locale: Locale }) {
   return (
     <div className="relative min-h-screen overflow-hidden bg-arena-bg text-brand-text">
-      {/* Arena atmosphere */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,122,0,0.14)_0%,transparent_55%),radial-gradient(ellipse_at_80%_80%,rgba(255,59,48,0.1)_0%,transparent_45%),radial-gradient(ellipse_at_20%_70%,rgba(30,58,138,0.25)_0%,transparent_50%)]"
@@ -69,27 +86,23 @@ export function LandingPage({ locale }: { locale: Locale }) {
         </p>
 
         <div
-          className="animate-fade-up mt-12 flex flex-wrap justify-center gap-6"
+          className="animate-fade-up mt-12 flex flex-wrap justify-center gap-4 sm:gap-5"
           style={{ animationDelay: "240ms" }}
         >
           {PREVIEW.map((card) => (
             <div
               key={card.tier}
-              className={`w-[150px] rounded-2xl border-2 bg-arena-panel/90 p-5 text-center backdrop-blur-sm sm:w-[180px] ${card.className}`}
+              className={`w-[140px] rounded-2xl border-2 p-4 text-center backdrop-blur-sm sm:w-[160px] ${card.className}`}
             >
-              <div
-                className={`font-display text-4xl ${
-                  card.ovr === 94
-                    ? "bg-gradient-to-r from-arena-accent to-arena-buzzer bg-clip-text text-transparent"
-                    : "text-white"
-                }`}
-              >
+              <div className={`font-display text-4xl ${card.ovrClass}`}>
                 {card.ovr}
               </div>
-              <div className="mt-1 font-display text-sm uppercase text-white">
+              <div
+                className={`mt-1 font-display text-[11px] uppercase leading-tight sm:text-xs ${card.titleClass}`}
+              >
                 {t(locale, `tier.${card.tier}`)}
               </div>
-              <p className="mt-2 text-xs leading-snug text-white/50">
+              <p className="mt-2 text-[10px] leading-snug text-white/50 sm:text-xs">
                 {t(locale, `tier.${card.tier}.desc`)}
               </p>
             </div>

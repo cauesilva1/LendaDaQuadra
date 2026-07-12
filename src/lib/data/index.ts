@@ -280,6 +280,8 @@ export const LEGACY_TIERS: LegacyTier[] = [
   { min: 110, id: "legend" },
   { min: 140, id: "immortal" },
   { min: 170, id: "goat_debate" },
+  /** Visual/showcase tier — unlocked only via final OVR 99 (see getLegacyTierId). */
+  { min: 999, id: "goat" },
 ];
 
 export const STORAGE_KEY = "lenda-da-quadra-v9";

@@ -702,8 +702,8 @@ export function GameSimulationProvider({
   }, [state.career, ovr]);
 
   const legacyTierId = useMemo(
-    () => (state.career ? getLegacyTierId(state.career) : "bench"),
-    [state.career],
+    () => (state.career ? getLegacyTierId(state.career, ovr) : "bench"),
+    [state.career, ovr],
   );
 
   const tr = useCallback(
@@ -1232,6 +1232,23 @@ export function GameSimulationProvider({
   const finishClutch = useCallback(() => {
     setState((s) => {
       if (!s.clutch?.resolved || s.clutch.winsGame === null) return s;
+      if (s.clutchKind === "quick") {
+        const won = s.clutch.winsGame;
+        if (won) sfxSuccess();
+        return {
+          ...s,
+          clutch: null,
+          clutchKind: null,
+          centerView: "season",
+          effectToasts: [
+            {
+              id: uid("toast"),
+              tone: won ? "good" : "bad",
+              labelKey: won ? "impact.keyWin" : "impact.keyLose",
+            },
+          ],
+        };
+      }
       if (s.clutchKind === "key_game") {
         const won = s.clutch.winsGame;
         if (won) sfxSuccess();

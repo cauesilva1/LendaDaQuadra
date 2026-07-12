@@ -288,10 +288,12 @@ export function computeLegacyScore(career: CareerState): number {
   );
 }
 
-export function getLegacyTierId(career: CareerState): string {
+export function getLegacyTierId(career: CareerState, finalOvr = 0): string {
+  if (finalOvr >= 99) return "goat";
   const score = computeLegacyScore(career);
   let id = LEGACY_TIERS[0]!.id;
   for (const tier of LEGACY_TIERS) {
+    if (tier.id === "goat") continue; // OVR 99 only
     if (score >= tier.min) id = tier.id;
   }
   return id;
@@ -649,13 +651,13 @@ export function computeLeagueTitleChance(
   age: number,
   prestige: number,
 ): number {
-  const ovrFactor = clamp((ovr - 70) / 28, 0, 1);
+  const ovrFactor = clamp((ovr - 68) / 28, 0, 1);
   const franchiseFactor = clamp((franchiseStrength - 70) / 28, 0, 1);
   const peak = ageFactor(age);
   return clamp(
-    0.08 + ovrFactor * 0.28 + franchiseFactor * 0.18 + peak * 0.08 * prestige,
-    0.06,
-    0.48,
+    0.14 + ovrFactor * 0.38 + franchiseFactor * 0.22 + peak * 0.1 * prestige,
+    0.1,
+    0.62,
   );
 }
 
@@ -1096,10 +1098,14 @@ export function simulateSeason(state: GameState): SimulateSeasonResult {
     }
   } else if (rank <= cutoff) {
     const isEuro = career.leagueId === "euro";
+    // Stars on contenders should reach finals most years — titles are the fun payoff
     const finalsGate = clamp(
-      (isEuro ? 0.28 : 0.2) + (9 - rank) * 0.04 + (performance - 58) / 80,
-      isEuro ? 0.18 : 0.14,
-      isEuro ? 0.65 : 0.58,
+      (isEuro ? 0.42 : 0.38) +
+        (9 - rank) * 0.06 +
+        (performance - 58) / 55 +
+        (ovr - 70) / 80,
+      isEuro ? 0.32 : 0.3,
+      isEuro ? 0.88 : 0.85,
     );
     if (Math.random() < finalsGate) {
       pendingFinals = buildPendingFinals(career, ovr, slots, "league");
@@ -1553,7 +1559,7 @@ export function shareCareerText(state: GameState): string {
   const player = state.player!;
   const career = state.career!;
   const ovr = computeOverall(liveStats(state), player.posId);
-  const tierId = getLegacyTierId(career);
+  const tierId = getLegacyTierId(career, ovr);
   const tier = t(state.locale, `tier.${tierId}`);
   const tr = career.trophies;
   return `LENDA DA QUADRA — ${player.name} · ${player.posId} · OVR ${ovr}\n${tier}\n${career.seasonsPlayed} seasons · ${tr.nbaTitles} NBA · ${tr.leagueTitles} league · ${tr.mvps} MVP · ${tr.allStars} AS`;

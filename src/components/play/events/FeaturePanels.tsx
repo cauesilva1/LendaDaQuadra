@@ -17,6 +17,7 @@ export function FeaturePanels() {
     finishStreet3x3,
     finishAllStar,
     resolveContractTalk,
+    startQuickCrunch,
   } = useGameActions();
   const view = state.centerView;
   const career = state.career;
@@ -246,7 +247,7 @@ export function FeaturePanels() {
         </p>
         <Button
           className="mt-4 w-full justify-center"
-          onClick={() => setCenterView("quick_crunch")}
+          onClick={startQuickCrunch}
         >
           {tr("daily.play")}
         </Button>

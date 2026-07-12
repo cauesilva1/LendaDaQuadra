@@ -663,6 +663,10 @@ const pt: Dict = {
   "tier.immortal.desc": "O topo. Você virou mito.",
   "tier.goat_debate": "SEMPRE CITADO NO DEBATE DO GOAT",
   "tier.goat_debate.desc": "Estátua já tem. A discussão nunca acaba.",
+  "tier.goat": "GOAT",
+  "tier.goat.desc": "OVR 99. Fim da conversa. Você é o padrão.",
+  "legacy.download": "Baixar imagem",
+  "doc.title": "TÍTULO · {club}",
 
   "press.champion": "{name} conquista o título da {league} com {club}",
   "press.championBody":
@@ -1380,6 +1384,10 @@ const enFull: Dict = {
   "tier.immortal.desc": "The peak. You became myth.",
   "tier.goat_debate": "ALWAYS IN THE GOAT DEBATE",
   "tier.goat_debate.desc": "Statue unlocked. The argument never ends.",
+  "tier.goat": "GOAT",
+  "tier.goat.desc": "OVR 99. End of discussion. You are the standard.",
+  "legacy.download": "Download image",
+  "doc.title": "TITLE · {club}",
 
   "press.champion": "{name} wins the {league} title with {club}",
   "press.championBody":
@@ -2097,6 +2105,10 @@ const esFull: Dict = {
   "tier.immortal.desc": "La cima. Te volviste mito.",
   "tier.goat_debate": "SIEMPRE EN EL DEBATE DEL GOAT",
   "tier.goat_debate.desc": "Estatua lista. La discusión nunca termina.",
+  "tier.goat": "GOAT",
+  "tier.goat.desc": "OVR 99. Fin del debate. Tú eres el estándar.",
+  "legacy.download": "Descargar imagen",
+  "doc.title": "TÍTULO · {club}",
 
   "press.champion": "{name} gana el título de la {league} con {club}",
   "press.championBody":

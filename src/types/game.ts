@@ -575,7 +575,7 @@ export interface GameState {
   /** Full 4-quarter playable game */
   fullGame: FullGameState | null;
   /** Whether active clutch is a finals, key game, or national */
-  clutchKind: "finals" | "key_game" | "national" | null;
+  clutchKind: "finals" | "key_game" | "national" | "quick" | null;
   /** Temporary attribute deltas for sidebar flash (+2 ARR) */
   statFlash: Partial<Record<AttrKey, number>> | null;
   /** High-contrast impact toasts in the center column */
